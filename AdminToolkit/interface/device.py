@@ -19,9 +19,14 @@ from typing import Iterator
 import json
 import subprocess
 
-from AdminToolkit.tools.format import byte_humanize
+from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.dict import bool_from_json, fix_dict_key
 from .partition import parted
+
+####################################################################################################
+
+def is_sd(name: str) -> bool:
+    return name.startswith('sd') and len(name) == 3
 
 ####################################################################################################
 
@@ -193,7 +198,7 @@ class BlockDevice:
 
     @property
     def is_sd(self) -> bool:
-        return self.name.startswith('sd') and len(self.name) == 3
+        return is_sd(self.name)
 
     ##############################################
 
@@ -222,6 +227,23 @@ class BlockDevice:
     def hsize(self) -> str:
         return byte_humanize(self.size)
 
+    @property
+    def number_of_sectors(self) -> int:
+        return self._gpt.size
+
+    ##############################################
+
+    @property
+    def partition_table_type(self) -> str:
+        return self._gpt.label.upper()
+
+    @property
+    def sector_size(self) -> int:
+        return self._gpt.logical_sector_size
+
+    def sector_to_byte(self, value: int) -> int:
+        return value * self.sector_size
+
 ####################################################################################################
 
 class Partition:
@@ -232,7 +254,7 @@ class Partition:
         self.device = device
         self._lsblk = lsblk
         # self.id == self.part_number
-        self._gpt = device._gpt_partitions[self.part_number]
+        self._gpt = device._gpt_partitions[self.number]
         self.links = dev_links(self.name)
 
     ##############################################
@@ -255,12 +277,12 @@ class Partition:
     ##############################################
 
     @property
-    def part_number(self) -> str:
+    def number(self) -> str:
         return self._lsblk.partn
 
     @property
     def part_label(self) -> str:
-        return self._lsblk.partlabel
+        return fix_none(self._lsblk.partlabel)
 
     @property
     def part_type(self) -> str:
@@ -272,7 +294,7 @@ class Partition:
 
     @property
     def label(self) -> str:
-        return self._lsblk.label
+        return fix_none(self._lsblk.label)
 
     @property
     def size(self) -> int:
@@ -304,8 +326,9 @@ class Partition:
     ##############################################
 
     @property
-    def fs_type(self) -> str:
-        return self._lsblk.fstype
+    def filesystem(self) -> str:
+        # return self._gpt.filesystem
+        return fix_none(self._lsblk.fstype)
 
     @property
     def fs_size(self) -> int:
@@ -346,9 +369,7 @@ class Partition:
 
     @property
     def gpt_size(self) -> int:
-        # LBA_SIZE = 512
-        LBA_SIZE = self.device._gpt.logical_sector_size
-        return self._gpt.size * LBA_SIZE
+        return self.device.sector_to_byte(self._gpt.size)
 
     @property
     def gpt_hsize(self) -> int:
@@ -362,6 +383,6 @@ class Partition:
 
 def devices() -> Iterator[BlockDevice]:
     for _ in SYS_BLOCK.iterdir():
-        device = BlockDevice(_.name)
-        if device.is_sd:
+        if is_sd(_.name):
+            device = BlockDevice(_.name)
             yield device

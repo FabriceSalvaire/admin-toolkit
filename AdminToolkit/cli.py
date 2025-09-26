@@ -12,9 +12,10 @@ __all__ = ['Cli']
 
 ####################################################################################################
 
+from collections import namedtuple
 # from datetime import datetime
 # from pathlib import PurePosixPath
-# from pprint import pprint
+from pprint import pprint
 # from typing import Iterable
 # import difflib
 # import html
@@ -38,6 +39,8 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.styles import Style
+
+from AdminToolkit.tools.format import byte_humanize, fix_none
 
 ####################################################################################################
 
@@ -379,8 +382,12 @@ class CliBase:
 
 class Cli(CliBase):
 
+    ##############################################
+
     def foo(self) -> None:
         self.print(f'<blue>foo</blue>')
+
+    ##############################################
 
     def devices(self) -> None:
         from AdminToolkit.interface.device import devices
@@ -389,11 +396,74 @@ class Cli(CliBase):
             self.print()
             self.print(f'<blue>{device.name}</blue>')
             self.print(f'  {device.model}   {device.hsize}')
+            if device.removable:
+                self.print(f'  Removable')
             for link in device.links:
                 if link.parent.name == 'by-id' and link.name[:3] not in ('wwn',):
                     self.print(f'  <green>{link}</green>')
-            for part in device.partitions:
-                ro = '<red>RO</red>' if part.ro else ''
-                self.print(f'  <blue>{part.name:6}</blue>  {part.hsize}  {ro}')
-                for mountpoint in part.mountpoints:
-                    self.print(f'    <green>{mountpoint}</green>')
+            # for part in device.partitions:
+            #     ro = '<red>RO</red>' if part.ro else ''
+            #     self.print(f'  <blue>{part.name:6}</blue>  {part.hsize}  {ro}')
+            #     for mountpoint in part.mountpoints:
+            #         self.print(f'    <green>{mountpoint}</green>')
+
+    ##############################################
+
+    def parts(self, name: str) -> None:
+        from AdminToolkit.interface.device import BlockDevice
+        device = BlockDevice(name)
+        self.print(f'<blue>{device.name}</blue>')
+        self.print(f'  {device.model}   <blue>{device.hsize}</blue> = {device.number_of_sectors:_} s')
+        self.print(f'  Partition Table: <green>{device.partition_table_type}</green>')
+        # pprint(device._lsblk)
+        # pprint(device._gpt)
+        last_end = 0
+        def print_line(**d):
+            d = namedtuple('PartPrintLine', d.keys())(**d)
+            # pprint(d)
+            self.print(f'<red>{d.name:5}</red> | {d.start:14_} — {d.end:14_} = {d.size:16_} = <blue>{d.hsize:>8}</blue> | {d.fs:4} | {d.mountpoint:16} | {d.label}')
+        def print_gap(start):
+            if start != last_end + 1:
+                gap_size = device.sector_to_byte(start - last_end)
+                hgap_size = byte_humanize(gap_size)
+                print_line(
+                    name='...',
+                    start=last_end + 1 if last_end else 0,
+                    end=start - 1,
+                    size=gap_size,
+                    hsize=hgap_size,
+                    label='',
+                    fs='',
+                    mountpoint='',
+                )
+        for p in sorted(device.partitions, key=lambda p: p.gpt_start):
+            # pprint(p._lsblk)
+            # pprint(p._gpt)
+            print_gap(p.gpt_start)
+            print_line(
+                name=p.name,
+                start=p.gpt_start,
+                end=p.gpt_end,
+                size=p.gpt_size,
+                hsize=p.gpt_hsize,
+                # label=p.label,
+                label=p.part_label,
+                fs=p.filesystem.replace('_member', ''),
+                mountpoint=fix_none(p.mountpoint),
+            )
+            last_end = p.gpt_end
+        print_gap(device.number_of_sectors)
+
+    ##############################################
+
+    def partfs(self, name: str) -> None:
+        from AdminToolkit.interface.device import BlockDevice
+        device = BlockDevice(name)
+        self.print(f'<blue>{device.name}</blue>')
+        self.print(f'  {device.model}   <blue>{device.hsize}</blue>')
+        def print_line(**d):
+            d = namedtuple('PartPrintLine', d.keys())(**d)
+        for p in sorted(device.partitions, key=lambda p: p.number):
+            mountpoint = fix_none(p.mountpoint)
+            fs = p.filesystem.replace('_member', '')
+            self.print(f'<red>{p.name:5}</red> | {fs:4} | {mountpoint:16} | {p.part_label:30} | {p.label}')

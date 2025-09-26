@@ -20,9 +20,10 @@ PARTED = '/usr/bin/parted'
 
 def fix_s_unit(d: dict) -> None:
     for key in ('start', 'end', 'size'):
-        _ = int(d[key][:-1])
-        assert(d[key] == f'{_}s')
-        d[key] = _
+        if key in d:
+            _ = int(d[key][:-1])
+            assert(d[key] == f'{_}s')
+            d[key] = _
 
 ####################################################################################################
 
@@ -45,6 +46,7 @@ def parted(name: str) -> dict:
     except json.decoder.JSONDecodeError:
         raise NameError(f'{cmd} -> {_}')
     data = data['disk']
+    # pprint(data)
     new_partitions = []
     fields = (
         'end',
@@ -55,8 +57,11 @@ def parted(name: str) -> dict:
         'size',
         'start',
         'type',
+        # For GPT
         'type_uuid',
         'uuid',
+        # for MsDOS
+        'type_id',
     )
     GptPartion = namedtuple(
         'GptPartion',
@@ -73,6 +78,7 @@ def parted(name: str) -> dict:
         part = GptPartion(**part)
         new_partitions.append(part)
     data['partitions'] = new_partitions
+    fix_s_unit(data)
     fields = (
         'label',
         'logical_sector_size',
@@ -158,7 +164,7 @@ def read_device(name: str, count: int = 1024) -> bytes:
 
 ####################################################################################################
 
-class GPTError(Exception):
+class GptError(Exception):
     pass
 
 ####################################################################################################
@@ -171,14 +177,14 @@ def read_header(stream: bytes, lba_size: int = 512):
     # fp.seek(mbr_size)
     # data = fp.read(header_size)
     data = stream[mbr_size:mbr_size+header_size]
-    pprint(data)
+    # pprint(data)
     header = GPTHeader._make(struct.unpack(fmt, data))
     if header.signature != b'EFI PART':
-        raise GPTError(f'Bad signature: {header.signature}')
+        raise GptError(f'Bad signature: {header.signature}')
     if header.revision != b'\x00\x00\x01\x00':
-        raise GPTError(f'Bad revision: {header.revision}')
+        raise GptError(f'Bad revision: {header.revision}')
     if header.header_size < 92:
-        raise GPTError(f'Bad header size: {header.header_size}')
+        raise GptError(f'Bad header size: {header.header_size}')
     # TODO check crc32
     #   use zlib.crc32
     header = header._replace(
@@ -198,7 +204,7 @@ def read_partitions(stream: bytes, header, lba_size: int = 512):
         data = stream[index:next_index]
         index = next_index
         if len(data) < struct.calcsize(fmt):
-            raise GPTError('Short partition entry')
+            raise GptError('Short partition entry')
         part = GPTPartition._make(struct.unpack(fmt, data) + (part_number,))
         # skip unused entries
         if part.type_uuid == 16*b'\x00':
@@ -216,16 +222,22 @@ def read_partitions(stream: bytes, header, lba_size: int = 512):
 
 if __name__ == '__main__':
     from AdminToolkit.tools.format import byte_humanize
-    dev = 'sda'
-    stream = read_device(dev)
-    # pprint(stream)
-    header = read_header(stream)
-    pprint(header)
-    for part in read_partitions(stream, header):
-        pprint(part)
+
+    dev_name = 'sda'
+    # dev_name = 'sdc'
+
+    try:
+        stream = read_device(dev_name)
+        # pprint(stream)
+        header = read_header(stream)
+        pprint(header)
+        for part in read_partitions(stream, header):
+            pprint(part)
+    except GptError:
+        pass
 
     print()
-    _ = parted('sda')
+    _ = parted(dev_name)
     pprint(_)
     print()
     last_end = 0
