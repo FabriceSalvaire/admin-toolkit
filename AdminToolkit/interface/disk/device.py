@@ -4,6 +4,8 @@
 
 """
 
+__all__ = ['Device', 'devices']
+
 ####################################################################################################
 
 # lsblk
@@ -23,11 +25,7 @@ from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.dict import bool_from_json, fix_dict_key
 from .partition import parted
-
-####################################################################################################
-
-def is_sd(name: str) -> bool:
-    return name.startswith('sd') and len(name) == 3
+from .tool import to_dev_path, is_sd
 
 ####################################################################################################
 
@@ -124,21 +122,19 @@ def from_lsblk_dict(d: dict):
         d['children'] = [from_lsblk_dict(_) for _ in d['children']]
     return LsblkData(**d)
 
-def lsblk(name: str) -> dict:
+def lsblk(dev_path: str | Path) -> dict:
     # sblk command reads the sysfs filesystem and udev db to gather
     # information. If the udev db is not available or lsblk is
     # compiled without udev support, then it tries to read LABELs,
     # UUIDs and filesystem types from the block device. In this case
     # root permissions are necessary.
-    dev = f'/dev/{name}'
-    if not Path(dev).exists():
-        raise NameError(f'Any {dev}')
+    dev_path = to_dev_path(dev_path)
     cmd = (
         LSBLK,
         '--bytes',
         '--output-all',
         '--json',
-        dev,
+        str(dev_path),
     )
     process = subprocess.run(cmd, capture_output=True)
     _ = process.stdout.decode('utf8')
@@ -171,9 +167,9 @@ class BlockDevice:
 
     ##############################################
 
-    def __init__(self, name: str) -> None:
-        self.name = str(name)
-        self._lsblk = lsblk(self.name)
+    def __init__(self, dev_path: str | Path) -> None:
+        self.dev_path = to_dev_path(dev_path)
+        self._lsblk = lsblk(self.dev_path)
         self._read_gpt_table()
         self.partitions = [Partition(self, _) for _ in self._lsblk.children]
         self.links = dev_links(self.name)
@@ -192,7 +188,7 @@ class BlockDevice:
 
     def _read_gpt_table(self):
         try:
-            self._gpt = parted(self.name)
+            self._gpt = parted(self.dev_path)
             self.is_gpt = self._gpt.label == 'gpt'
             self._gpt_partitions = {_.number: _ for _ in self._gpt.partitions}
         except RootPermissionRequired:
@@ -201,6 +197,14 @@ class BlockDevice:
             self._gpt_partitions = None
 
     ##############################################
+
+    @property
+    def name(self) -> bool:
+        return self.dev_path.name
+
+    @property
+    def resolved_dev_path(self) -> bool:
+        return to_dev_path(self.dev_path, resolve=True)
 
     @property
     def is_sd(self) -> bool:

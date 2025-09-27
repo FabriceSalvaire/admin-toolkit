@@ -44,6 +44,7 @@ from prompt_toolkit.styles import Style
 
 from AdminToolkit.danger import AbortAction
 from AdminToolkit.interface.user import RootPermissionRequired
+from AdminToolkit.interface.disk.tool import to_dev_path
 from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
@@ -431,16 +432,16 @@ class Cli(CliBase):
 
     ##############################################
 
-    def clear_device(self, name: str) -> None:
+    def clear_device(self, dev_path: str) -> None:
         from AdminToolkit.interface.disk.partition import clear_device
-        clear_device(name)
+        clear_device(dev_path)
 
     ##############################################
 
-    def parts(self, name: str) -> None:
+    def parts(self, dev_path: str) -> None:
         from AdminToolkit.interface.disk.device import BlockDevice
-        device = BlockDevice(name)
-        self.print(f'<blue>{device.name}</blue>')
+        device = BlockDevice(dev_path)
+        self.print(f'<blue>{device.name}</blue> -> <blue>{device.resolved_dev_path}</blue>')
         self.print(f'  {device.model}   <blue>{device.hsize}</blue> = {device.number_of_sectors:_} s')
         self.print(f'  Partition Table: <green>{device.partition_table_type}</green>')
         # pprint(device._lsblk)
@@ -484,9 +485,9 @@ class Cli(CliBase):
 
     ##############################################
 
-    def partfs(self, name: str) -> None:
+    def partfs(self, dev_path: str) -> None:
         from AdminToolkit.interface.disk.device import BlockDevice
-        device = BlockDevice(name)
+        device = BlockDevice(dev_path)
         self.print(f'<blue>{device.name}</blue>')
         self.print(f'  {device.model}   <blue>{device.hsize}</blue>')
         table = Table(

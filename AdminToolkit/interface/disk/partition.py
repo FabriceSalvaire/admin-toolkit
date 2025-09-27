@@ -11,9 +11,10 @@ import struct
 import uuid
 
 from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.danger import raise_if_root_device, CONFIRM_DANGER
+from AdminToolkit.danger import raise_if_root_device   # , CONFIRM_DANGER
 from AdminToolkit.tools.dict import fix_dict_key
 from AdminToolkit.tools.subprocess import run_command, RUN_DANGEROUS
+from .tool import to_dev_path
 
 ####################################################################################################
 
@@ -91,15 +92,13 @@ GptTable = namedtuple(
 
 ####################################################################################################
 
-def parted(name: str) -> dict:
+def parted(dev_path: str | Path) -> dict:
     raise_if_not_root(PARTED)
-    dev = f'/dev/{name}'
-    if not Path(dev).exists():
-        raise NameError(f'Any {dev}')
+    dev_path = to_dev_path(dev_path)
     cmd = (
         PARTED,
         '--json',
-        dev,
+        str(dev_path),
         'unit s',
         'print'
     )
@@ -171,35 +170,30 @@ def _to_uuid(value: bytes) -> str:
 
 ####################################################################################################
 
-def read_device(name: str, count: int = 1024) -> bytes:
+def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
     raise_if_not_root(DD)
-    dev = f'/dev/{name}'
-    if not Path(dev).exists():
-        raise NameError(f'Any {dev}')
+    dev_path = to_dev_path(dev_path)
     cmd = (
         DD,
         f'count={count}',
-        f'if={dev}',
+        f'if={dev_path}',
     )
     return run_command(cmd, to_bytes=True)
 
 ####################################################################################################
 
-def clear_device(path: str | Path, count: int = 1024) -> bytes:
+def clear_device(dev_path: str | Path, count: int = 1024) -> bytes:
     # !!! DANGER !!!
-    path = Path(path)
-    # Fixme: func
-    if not path.exists():
-        raise NameError(f"Device {path} doesn't exists")
     raise_if_not_root(DD)
-    raise_if_root_device(path)
+    dev_path = to_dev_path(dev_path)
+    raise_if_root_device(dev_path)
     cmd = (
         DD,
         f'count={count}',
         f'if=/dev/zero',
-        f'KILLEDof={path}',
+        f'KILLEDof={dev_path}',
     )
-    return RUN_DANGEROUS(f"Clear device {path}", cmd)
+    return RUN_DANGEROUS(f"Clear device {dev_path}", cmd)
 
 ####################################################################################################
 
