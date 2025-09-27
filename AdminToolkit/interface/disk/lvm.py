@@ -1,12 +1,12 @@
 ####################################################################################################
 
-from collections import namedtuple
-from pathlib import Path
+# from collections import namedtuple
+# from pathlib import Path
 from pprint import pprint
-import subprocess
-import json
 
+from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import to_namedtuple
+from AdminToolkit.tools.subprocess import run_command
 
 ####################################################################################################
 
@@ -16,6 +16,7 @@ XVS = '/usr/bin/{}s'
 ####################################################################################################
 
 def call_xvs(name: str) -> list:
+    raise_if_not_root()
     cmd = (
         XVS.format(name),
         '--units=s',
@@ -23,9 +24,7 @@ def call_xvs(name: str) -> list:
         f'--options={name}_all,vg_name',
         '--reportformat=json_std',
     )
-    process = subprocess.run(cmd, capture_output=True)
-    _ = process.stdout.decode('utf8')
-    _ = json.loads(_)
+    _ = run_command(cmd, to_json=True)
     data = _['report'][0][name]
     cls_name = f'{name.capitalize()}Info'
     return [to_namedtuple(cls_name, _) for _ in data]

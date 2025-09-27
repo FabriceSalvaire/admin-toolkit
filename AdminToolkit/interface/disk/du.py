@@ -6,8 +6,9 @@
 
 ####################################################################################################
 
-import subprocess
 from pathlib import Path
+
+from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
 
@@ -110,8 +111,7 @@ def du(path: Path | str) -> int:
         # '-h',
         str(path),
     )
-    print(cmd)
-    process = subprocess.run(cmd, capture_output=True)
-    _ = process.stdout.decode('utf8').splitlines()
+    # print(cmd)
+    _ = list(iter_on_command_output(cmd))
     bytes_ = int(_[-1].split()[0])
     return bytes_

@@ -390,7 +390,7 @@ class Cli(CliBase):
     ##############################################
 
     def devices(self) -> None:
-        from AdminToolkit.interface.device import devices
+        from AdminToolkit.interface.disk.device import devices
         devices = devices()
         for device in sorted(devices, key=lambda _: _.name):
             self.print()
@@ -410,7 +410,7 @@ class Cli(CliBase):
     ##############################################
 
     def parts(self, name: str) -> None:
-        from AdminToolkit.interface.device import BlockDevice
+        from AdminToolkit.interface.disk.device import BlockDevice
         device = BlockDevice(name)
         self.print(f'<blue>{device.name}</blue>')
         self.print(f'  {device.model}   <blue>{device.hsize}</blue> = {device.number_of_sectors:_} s')
@@ -457,7 +457,7 @@ class Cli(CliBase):
     ##############################################
 
     def partfs(self, name: str) -> None:
-        from AdminToolkit.interface.device import BlockDevice
+        from AdminToolkit.interface.disk.device import BlockDevice
         device = BlockDevice(name)
         self.print(f'<blue>{device.name}</blue>')
         self.print(f'  {device.model}   <blue>{device.hsize}</blue>')
@@ -499,15 +499,13 @@ class Cli(CliBase):
     ##############################################
 
     def df(self) -> None:
-        from AdminToolkit.interface.df import df
+        from AdminToolkit.interface.disk.df import df
         df_infos = df()
         self.print(f'{"":20} {"Size":>8} {"Used":>8} {"Free":>8}')
         for d in sorted(df_infos, key=lambda _: str(_.mountpoint)):
             mountpoint = str(d.mountpoint)
-            size = byte_humanize(d.size)
-            used = byte_humanize(d.used)
-            free = byte_humanize(d.free)
+            free = d.hfree
             if free.endswith('MB') or free.endswith('KB'):
-                self.print(f'<red>{mountpoint:20}</red> {size:>8} {used:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
+                self.print(f'<red>{mountpoint:20}</red> {d.hsize:>8} {d.hused:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
             else:
-                self.print(f'<green>{mountpoint:20}</green> {size:>8} {used:>8} {free:>8} {d.pused:>3}%   {d.dev}')
+                self.print(f'<green>{mountpoint:20}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {d.pused:>3}%   {d.dev}')

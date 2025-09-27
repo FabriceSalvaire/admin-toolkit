@@ -1,20 +1,37 @@
 ####################################################################################################
 
+__all__ = ['partion_to_device']
+
+####################################################################################################
+
 from collections import namedtuple
 from pathlib import Path
 from pprint import pprint
-import json
 import struct
-import subprocess
 import uuid
 
 from AdminToolkit.interface.user import raise_if_not_root
+from AdminToolkit.danger import raise_if_root_device, CONFIRM_DANGER
 from AdminToolkit.tools.dict import fix_dict_key
+from AdminToolkit.tools.subprocess import run_command, RUN_DANGEROUS
 
 ####################################################################################################
 
 DD = '/usr/bin/dd'
 PARTED = '/usr/bin/parted'
+
+####################################################################################################
+
+def partion_to_device(name: str) -> str:
+    name = str(name)
+    if not name:
+        raise ValueError
+    i = len(name) - 1
+    while i >= 0 and name[i].isnumeric():
+        i -= 1
+    _ = Path(name[:i+1]).name
+    # print(name, _)
+    return _
 
 ####################################################################################################
 
@@ -24,6 +41,51 @@ def fix_s_unit(d: dict) -> None:
             _ = int(d[key][:-1])
             assert(d[key] == f'{_}s')
             d[key] = _
+
+####################################################################################################
+
+_fields = (
+    'end',
+    'filesystem',
+    'flags',
+    'name',
+    'number',
+    'size',
+    'start',
+    'type',
+    # For GPT
+    'type_uuid',
+    'uuid',
+    # for MsDOS
+    'type_id',
+)
+
+GptPartion = namedtuple(
+    'GptPartion',
+    _fields,
+    defaults=[None]*len(_fields),
+)
+
+####################################################################################################
+
+_fields = (
+    'label',
+    'logical_sector_size',
+    'max_partitions',
+    'model',
+    'partitions',
+    'path',
+    'physical_sector_size',
+    'size',
+    'transport',
+    'uuid',
+)
+
+GptTable = namedtuple(
+    'GptTable',
+    _fields,
+    defaults=[None]*len(_fields),
+)
 
 ####################################################################################################
 
@@ -39,35 +101,10 @@ def parted(name: str) -> dict:
         'unit s',
         'print'
     )
-    process = subprocess.run(cmd, capture_output=True)
-    _ = process.stdout.decode('utf8')
-    try:
-        data = json.loads(_)
-    except json.decoder.JSONDecodeError:
-        raise NameError(f'{cmd} -> {_}')
+    data = run_command(cmd, to_json=True)
     data = data['disk']
     # pprint(data)
     new_partitions = []
-    fields = (
-        'end',
-        'filesystem',
-        'flags',
-        'name',
-        'number',
-        'size',
-        'start',
-        'type',
-        # For GPT
-        'type_uuid',
-        'uuid',
-        # for MsDOS
-        'type_id',
-    )
-    GptPartion = namedtuple(
-        'GptPartion',
-        fields,
-        defaults=[None]*len(fields),
-    )
     for part in data['partitions']:
         fix_dict_key(part)
         fix_s_unit(part)
@@ -79,23 +116,6 @@ def parted(name: str) -> dict:
         new_partitions.append(part)
     data['partitions'] = new_partitions
     fix_s_unit(data)
-    fields = (
-        'label',
-        'logical_sector_size',
-        'max_partitions',
-        'model',
-        'partitions',
-        'path',
-        'physical_sector_size',
-        'size',
-        'transport',
-        'uuid',
-    )
-    GptTable = namedtuple(
-        'GptTable',
-        fields,
-        defaults=[None]*len(fields),
-    )
     data = GptTable(**fix_dict_key(data))
     return data
 
@@ -131,7 +151,7 @@ Q   flags
 
 ####################################################################################################
 
-def _make_fmt(name: str, format: str, extras: list = []):   # -> list[str, ]
+def _make_format(name: str, format: str, extras: list = []):   # -> list[str, ]
     type_and_name = [_.split(None, 1) for _ in format.strip().splitlines()]
     # print(type_and_name)
     fmt = ''.join(t for t, n in type_and_name)
@@ -159,8 +179,25 @@ def read_device(name: str, count: int = 1024) -> bytes:
         f'count={count}',
         f'if={dev}',
     )
-    process = subprocess.run(cmd, capture_output=True)
-    return process.stdout
+    return run_command(cmd, to_bytes=True)
+
+####################################################################################################
+
+def clear_device(name: str, count: int = 1024) -> bytes:
+    # !!! DANGER !!!
+    raise_if_not_root()
+    raise_if_root_device(name)
+    CONFIRM_DANGER()
+    dev = f'/dev/{name}'
+    if not Path(dev).exists():
+        raise NameError(f'Any {dev}')
+    cmd = (
+        DD,
+        f'count={count}',
+        f'if=/dev/zero',
+        f'of={dev}',
+    )
+    return RUN_DANGEROUS(cmd)
 
 ####################################################################################################
 
@@ -170,7 +207,7 @@ class GptError(Exception):
 ####################################################################################################
 
 def read_header(stream: bytes, lba_size: int = 512):
-    fmt, GPTHeader = _make_fmt('GptTableRaw', GPT_HEADER_FORMAT)
+    fmt, GPTHeader = _make_format('GptTableRaw', GPT_HEADER_FORMAT)
     header_size = struct.calcsize(fmt)
     mbr_size = 1 * lba_size
     # skip MBR
@@ -195,7 +232,7 @@ def read_header(stream: bytes, lba_size: int = 512):
 ####################################################################################################
 
 def read_partitions(stream: bytes, header, lba_size: int = 512):
-    fmt, GPTPartition = _make_fmt('GptPartitionRaw', GPT_PARTITION_FORMAT, extras=['number'])
+    fmt, GPTPartition = _make_format('GptPartitionRaw', GPT_PARTITION_FORMAT, extras=['number'])
     # fp.seek(header.part_entry_start_lba * lba_size)
     index = header.part_entry_start_lba * lba_size
     for part_number in range(1, 1+header.num_part_entries):
@@ -241,7 +278,7 @@ if __name__ == '__main__':
     pprint(_)
     print()
     last_end = 0
-    for p in sorted(_.partitions, key=lambda p:p.start):
+    for p in sorted(_.partitions, key=lambda p: p.start):
         if last_end and p.start != last_end + 1:
             gap = p.start - last_end
             print(f'  Gap {gap:_}s {byte_humanize(gap*512)}')

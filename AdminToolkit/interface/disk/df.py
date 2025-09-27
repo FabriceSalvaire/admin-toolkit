@@ -3,38 +3,69 @@
 from collections import namedtuple
 from pathlib import Path
 from pprint import pprint
-import subprocess
+
+from AdminToolkit.tools.format import byte_humanize
+from AdminToolkit.tools.parse import split_line
+from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
 
 DF = '/usr/bin/df'
 
+ROOT = Path('/')
+EXCLUDED_MOUNTPOINTS = ('dev', 'sys', 'run', 'tmp')
+
 ####################################################################################################
 
+DfInfoBase = namedtuple(
+    'DfInfoBase', (
+        'dev',
+        'size',
+        'used',
+        'free',
+        'pused',
+        'mountpoint',
+    ),
+)
+
+class DfInfo(DfInfoBase):
+
+    @property
+    def hsize(self) -> str:
+        return byte_humanize(self.size)
+
+    @property
+    def hused(self) -> str:
+        return byte_humanize(self.used)
+
+    @property
+    def hfree(self) -> str:
+        return byte_humanize(self.free)
+
+####################################################################################################
+
+
 def df() -> list:
-    DfInfo = namedtuple('DfInfo', ('dev', 'size', 'used', 'free', 'pused', 'mountpoint'))
+    df_infos = []
     cmd = (
         DF,
     )
-    process = subprocess.run(cmd, capture_output=True)
-    _ = process.stdout.decode('utf8')
-    mount_points = []
-    for i, line in enumerate(_.splitlines()):
-        if not i:
-            continue
-        _ = [_ for _ in line.split()]
-        for i in (0, 5):
-            _[i] = Path(_[i])
-        for i in range(1, 4):
-            _[i] = int(_[i]) * 1024
-        _[4] = int(_[4].replace('%', ''))
+    for line in iter_on_command_output(cmd, skip_first_lines=1):
+        _ = split_line(
+            line,
+            filters=(
+                ((0, 5), lambda _: Path(_)),
+                ([1, 3], lambda _: int(_) * 1024),
+                (4, lambda _: int(_.replace('%', ''))),
+            ),
+        )
         df_info = DfInfo(*_)
         # print(df_info)
         parts = df_info.mountpoint.parts
-        if (str(df_info.mountpoint) == '/'
-            or (len(parts) > 1 and parts[1] not in ('dev', 'sys', 'run', 'tmp'))):
-            mount_points.append(df_info)
-    return mount_points
+        if (df_info.mountpoint == ROOT
+            or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
+            df_infos.append(df_info)
+    return df_infos
 
 ####################################################################################################
 

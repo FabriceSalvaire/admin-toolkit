@@ -6,11 +6,13 @@
 
 ####################################################################################################
 
-import subprocess
+from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
 
 LOCATE = '/usr/bin/plocate'
+
+####################################################################################################
 
 def locate(pattern: str, basename: bool = False) -> list[str]:
     # Usage: plocate [OPTION]... PATTERN...
@@ -83,6 +85,5 @@ def locate(pattern: str, basename: bool = False) -> list[str]:
         # f'^{pattern}$',
         pattern,
     )
-    print(cmd)
-    process = subprocess.run(cmd, capture_output=True)
-    return process.stdout.decode('utf8').splitlines()
+    # print(cmd)
+    return iter_on_command_output(cmd)
