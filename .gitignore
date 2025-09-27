@@ -1,5 +1,10 @@
 *~
 
 __pycache__
+.pycache
 
 cli_history
+
+doc/sphinx/build/
+doc/sphinx/source/api/
+doc/sphinx/source/apidocs/

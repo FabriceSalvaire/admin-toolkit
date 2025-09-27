@@ -193,14 +193,13 @@ def clear_device(path: str | Path, count: int = 1024) -> bytes:
         raise NameError(f"Device {path} doesn't exists")
     raise_if_not_root(DD)
     raise_if_root_device(path)
-    CONFIRM_DANGER(f"Clear device {path}")
     cmd = (
         DD,
         f'count={count}',
         f'if=/dev/zero',
-        f'KILLEDof={dev}',
+        f'KILLEDof={path}',
     )
-    return RUN_DANGEROUS(cmd)
+    return RUN_DANGEROUS(f"Clear device {path}", cmd)
 
 ####################################################################################################
 

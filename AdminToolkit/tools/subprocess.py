@@ -17,7 +17,9 @@ def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
         warning = '/!\\ You will run this dangerous command: /!\\'
         atprint('<red>' + '='*len(warning) + '</red>')
         atprint('<red>' + warning + '</red>')
+        print()
         atprint('<blue>' + ' '.join(cmd) + '</blue>')
+        print()
         # This will abort by raising AbortAction
         CONFIRM_DANGER(message)
         # else we go !!!
