@@ -40,7 +40,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.styles import Style
 
-from AdminToolkit.tools.format import byte_humanize, fix_none
+from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
 
@@ -461,9 +461,53 @@ class Cli(CliBase):
         device = BlockDevice(name)
         self.print(f'<blue>{device.name}</blue>')
         self.print(f'  {device.model}   <blue>{device.hsize}</blue>')
-        def print_line(**d):
-            d = namedtuple('PartPrintLine', d.keys())(**d)
+        table = Table(
+            format={
+                'name': '<red>{}</red>',
+                'fs': '{}',
+                'mount': '<green>{}</green>',
+                'part_label': '{}',
+                'label': '{}',
+                'size': '{}',
+                'used': '{}',
+                'pused': '{}',
+            },
+            header={
+                'name': 'Name',
+                'fs': 'Fs',
+                'mount': 'Mount',
+                'part_label': 'Part Label',
+                'label': 'Label',
+                'size': 'Size',
+                'used': 'Used',
+                'pused': '%',
+            },
+        )
         for p in sorted(device.partitions, key=lambda p: p.number):
-            mountpoint = fix_none(p.mountpoint)
-            fs = p.filesystem.replace('_member', '')
-            self.print(f'<red>{p.name:5}</red> | {fs:4} | {mountpoint:16} | {p.part_label:30} | {p.label}')
+            table.append(
+                name=p.name,
+                fs=p.filesystem.replace('_member', ''),
+                mount=fix_none(p.mountpoint),
+                part_label=p.part_label,
+                label=p.label,
+                size=p.fs_hsize,
+                used=p.fs_hused,
+                pused=p.fs_pused,
+            )
+        self.print(table)
+
+    ##############################################
+
+    def df(self) -> None:
+        from AdminToolkit.interface.df import df
+        df_infos = df()
+        self.print(f'{"":20} {"Size":>8} {"Used":>8} {"Free":>8}')
+        for d in sorted(df_infos, key=lambda _: str(_.mountpoint)):
+            mountpoint = str(d.mountpoint)
+            size = byte_humanize(d.size)
+            used = byte_humanize(d.used)
+            free = byte_humanize(d.free)
+            if free.endswith('MB') or free.endswith('KB'):
+                self.print(f'<red>{mountpoint:20}</red> {size:>8} {used:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
+            else:
+                self.print(f'<green>{mountpoint:20}</green> {size:>8} {used:>8} {free:>8} {d.pused:>3}%   {d.dev}')
