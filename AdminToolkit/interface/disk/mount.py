@@ -76,7 +76,7 @@ def get_root_device() -> str:
                 parts[-1] = parts[-1].split('-')[0]
                 vg_name = '-'.join(parts)
                 # print(vg_name)
-                raise_if_not_root()
+                raise_if_not_root(VGS)
                 cmd = (
                     VGS,
                     '--rows',

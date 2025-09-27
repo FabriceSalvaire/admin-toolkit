@@ -19,6 +19,7 @@ from typing import Iterator
 import json
 import subprocess
 
+from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.dict import bool_from_json, fix_dict_key
 from .partition import parted
@@ -190,9 +191,14 @@ class BlockDevice:
     ##############################################
 
     def _read_gpt_table(self):
-        self._gpt = parted(self.name)
-        self.is_gpt = self._gpt.label == 'gpt'
-        self._gpt_partitions = {_.number:_ for _ in self._gpt.partitions}
+        try:
+            self._gpt = parted(self.name)
+            self.is_gpt = self._gpt.label == 'gpt'
+            self._gpt_partitions = {_.number: _ for _ in self._gpt.partitions}
+        except RootPermissionRequired:
+            self._gpt = None
+            self.is_gpt = None
+            self._gpt_partitions = None
 
     ##############################################
 
@@ -254,7 +260,11 @@ class Partition:
         self.device = device
         self._lsblk = lsblk
         # self.id == self.part_number
-        self._gpt = device._gpt_partitions[self.number]
+        if device._gpt_partitions is not None:
+            self._gpt = device._gpt_partitions[self.number]
+        else:
+            # Fixme: raise ...
+            self._gpt = None
         self.links = dev_links(self.name)
 
     ##############################################

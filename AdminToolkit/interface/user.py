@@ -1,6 +1,6 @@
 ####################################################################################################
 
-__all__ = ['is_root', 'raise_if_not_root']
+__all__ = ['is_root', 'raise_if_not_root', 'RootPermissionRequired']
 
 ####################################################################################################
 
@@ -15,6 +15,9 @@ def is_root() -> bool:
 
 ####################################################################################################
 
-def raise_if_not_root() -> None:
+class RootPermissionRequired(NameError):
+    pass
+
+def raise_if_not_root(message: str) -> None:
     if not is_root():
-        raise NameError('Root privileges are required')
+        raise RootPermissionRequired(f'Root privileges are required for: {message}')

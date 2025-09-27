@@ -12,19 +12,21 @@ __all__ = ['Cli']
 
 ####################################################################################################
 
-from collections import namedtuple
 # from datetime import datetime
 # from pathlib import PurePosixPath
-from pprint import pprint
 # from typing import Iterable
 # import difflib
 # import html
-import inspect
 # import json
 # import logging
-import os
 # import re
 # import subprocess
+
+from collections import namedtuple
+from pprint import pprint
+import getpass
+import inspect
+import os
 import traceback
 
 from pathlib import Path
@@ -40,6 +42,8 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.styles import Style
 
+from AdminToolkit.danger import AbortAction
+from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
@@ -271,6 +275,11 @@ class CliBase:
             method = getattr(self, command)
             try:
                 method(*argument)
+            except RootPermissionRequired as e:
+                # self.print('Root privileges are required')
+                self.print('<red>' + str(e) + '</red>')
+            except AbortAction:
+                self.print(f"<red>Aborded</red>")
             except Exception as e:
                 print(traceback.format_exc())
                 print(e)
@@ -339,6 +348,11 @@ class CliBase:
     ##############################################
 
     def usage(self) -> None:
+        user = getpass.getuser()
+        if user == 'root':
+            user_message = f'You are <red>SuperUser</red> !!!'
+        else:
+            user_message = f'User is <green>{user}</green>'
         for _ in (
             "<red>Enter</red>: <blue>command argument</blue>",
             "    or <blue>command1 argument; command2 argument; ...</blue>",
@@ -346,7 +360,10 @@ class CliBase:
             "use <blue>help</blue> <green>command</green> to get help",
             "use <green>tab</green> key to complete",
             "use <green>up/down</green> key to navigate history",
-            "<red>Exit</red> using command <blue>quit</blue> or <blue>Ctrl+d</blue>"
+            "<red>Exit</red> using command <blue>quit</blue> or <blue>Ctrl+d</blue>",
+            '',
+            user_message,
+            ''
         ):
             self.print(_)
 
@@ -384,11 +401,6 @@ class Cli(CliBase):
 
     ##############################################
 
-    def foo(self) -> None:
-        self.print(f'<blue>foo</blue>')
-
-    ##############################################
-
     def devices(self) -> None:
         from AdminToolkit.interface.disk.device import devices
         devices = devices()
@@ -406,6 +418,22 @@ class Cli(CliBase):
             #     self.print(f'  <blue>{part.name:6}</blue>  {part.hsize}  {ro}')
             #     for mountpoint in part.mountpoints:
             #         self.print(f'    <green>{mountpoint}</green>')
+
+    ##############################################
+
+    def is_root(self, name: str) -> None:
+        from AdminToolkit.danger import raise_if_root_device, AbortAction
+        try:
+            raise_if_root_device(name)
+            self.print('is <green>safe</green> device')
+        except AbortAction:
+            self.print('is <red>root</red> device')
+
+    ##############################################
+
+    def clear_device(self, name: str) -> None:
+        from AdminToolkit.interface.disk.partition import clear_device
+        clear_device(name)
 
     ##############################################
 

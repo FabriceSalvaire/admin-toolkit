@@ -16,7 +16,7 @@ XVS = '/usr/bin/{}s'
 ####################################################################################################
 
 def call_xvs(name: str) -> list:
-    raise_if_not_root()
+    raise_if_not_root('lvm ...vs command')
     cmd = (
         XVS.format(name),
         '--units=s',

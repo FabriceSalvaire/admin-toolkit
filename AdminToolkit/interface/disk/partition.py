@@ -23,13 +23,15 @@ PARTED = '/usr/bin/parted'
 ####################################################################################################
 
 def partion_to_device(name: str) -> str:
+    """Return sda for .../sda[0...9]"""
     name = str(name)
     if not name:
         raise ValueError
     i = len(name) - 1
     while i >= 0 and name[i].isnumeric():
         i -= 1
-    _ = Path(name[:i+1]).name
+    _ = name[:i+1]
+    _ = Path(_).name
     # print(name, _)
     return _
 
@@ -90,7 +92,7 @@ GptTable = namedtuple(
 ####################################################################################################
 
 def parted(name: str) -> dict:
-    raise_if_not_root()
+    raise_if_not_root(PARTED)
     dev = f'/dev/{name}'
     if not Path(dev).exists():
         raise NameError(f'Any {dev}')
@@ -170,7 +172,7 @@ def _to_uuid(value: bytes) -> str:
 ####################################################################################################
 
 def read_device(name: str, count: int = 1024) -> bytes:
-    raise_if_not_root()
+    raise_if_not_root(DD)
     dev = f'/dev/{name}'
     if not Path(dev).exists():
         raise NameError(f'Any {dev}')
@@ -183,19 +185,20 @@ def read_device(name: str, count: int = 1024) -> bytes:
 
 ####################################################################################################
 
-def clear_device(name: str, count: int = 1024) -> bytes:
+def clear_device(path: str | Path, count: int = 1024) -> bytes:
     # !!! DANGER !!!
-    raise_if_not_root()
-    raise_if_root_device(name)
-    CONFIRM_DANGER()
-    dev = f'/dev/{name}'
-    if not Path(dev).exists():
-        raise NameError(f'Any {dev}')
+    path = Path(path)
+    # Fixme: func
+    if not path.exists():
+        raise NameError(f"Device {path} doesn't exists")
+    raise_if_not_root(DD)
+    raise_if_root_device(path)
+    CONFIRM_DANGER(f"Clear device {path}")
     cmd = (
         DD,
         f'count={count}',
         f'if=/dev/zero',
-        f'of={dev}',
+        f'KILLEDof={dev}',
     )
     return RUN_DANGEROUS(cmd)
 
