@@ -13,7 +13,7 @@ from AdminToolkit.tools.subprocess import iter_on_command_output
 DF = '/usr/bin/df'
 
 ROOT = Path('/')
-EXCLUDED_MOUNTPOINTS = ('dev', 'sys', 'run', 'tmp')
+EXCLUDED_MOUNTPOINTS = ('dev', 'sys', 'tmp')
 
 ####################################################################################################
 
@@ -64,6 +64,8 @@ def df() -> list:
         parts = df_info.mountpoint.parts
         if (df_info.mountpoint == ROOT
             or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
+            if len(parts) > 2 and parts[1] == 'run' and parts[2] != 'media':
+                continue
             df_infos.append(df_info)
     return df_infos
 

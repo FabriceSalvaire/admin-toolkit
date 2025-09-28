@@ -182,7 +182,7 @@ def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
 
 ####################################################################################################
 
-def clear_device(dev_path: str | Path, count: int = 1024) -> bytes:
+def clear_device(dev_path: str | Path, count: int = 1) -> bytes:
     # !!! DANGER !!!
     raise_if_not_root(DD)
     dev_path = to_dev_path(dev_path)
@@ -191,9 +191,9 @@ def clear_device(dev_path: str | Path, count: int = 1024) -> bytes:
         DD,
         f'count={count}',
         f'if=/dev/zero',
-        f'KILLEDof={dev_path}',
+        f'of={dev_path}',
     )
-    return RUN_DANGEROUS(f"Clear device {dev_path}", cmd)
+    return RUN_DANGEROUS(f"Clear device {dev_path}", cmd, print_output=True)
 
 ####################################################################################################
 

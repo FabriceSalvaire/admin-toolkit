@@ -31,8 +31,13 @@ def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
 
 ####################################################################################################
 
-def run_command(cmd: list[str], to_json: bool = False, to_bytes: bool = False) -> str:
+def run_command(cmd: list[str], to_json: bool = False, to_bytes: bool = False, print_output: bool = False) -> str:
     process = subprocess.run(cmd, capture_output=True)
+    if print_output:
+        atprint('<blue>-- stderr</blue>')
+        atprint(process.stderr.decode('utf8'))
+        atprint('<blue>-- stdout</blue>')
+        atprint(process.stdout.decode('utf8'))
     _ = process.stdout
     if to_bytes:
         return _

@@ -53,6 +53,8 @@ from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 LINESEP = os.linesep
 
+SOURCE_PATH = Path(__file__).resolve().parents[1]
+
 type CommandName = str
 
 ####################################################################################################
@@ -281,6 +283,8 @@ class CliBase:
                 self.print('<red>' + str(e) + '</red>')
             except AbortAction:
                 self.print(f"<red>Aborded</red>")
+            except ValueError as e:
+                self.print(f"<red>{e}</red>")
             except Exception as e:
                 print(traceback.format_exc())
                 print(e)
@@ -434,7 +438,7 @@ class Cli(CliBase):
 
     def clear_device(self, dev_path: str) -> None:
         from AdminToolkit.interface.disk.partition import clear_device
-        clear_device(dev_path)
+        clear_device(dev_path)   # , print_output=True
 
     ##############################################
 
@@ -530,11 +534,46 @@ class Cli(CliBase):
     def df(self) -> None:
         from AdminToolkit.interface.disk.df import df
         df_infos = df()
-        self.print(f'{"":20} {"Size":>8} {"Used":>8} {"Free":>8}')
+        self.print(f'{"":30} {"Size":>8} {"Used":>8} {"Free":>8}')
         for d in sorted(df_infos, key=lambda _: str(_.mountpoint)):
             mountpoint = str(d.mountpoint)
             free = d.hfree
             if free.endswith('MB') or free.endswith('KB'):
-                self.print(f'<red>{mountpoint:20}</red> {d.hsize:>8} {d.hused:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
+                self.print(f'<red>{mountpoint:30}</red> {d.hsize:>8} {d.hused:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
             else:
-                self.print(f'<green>{mountpoint:20}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {d.pused:>3}%   {d.dev}')
+                self.print(f'<green>{mountpoint:30}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {d.pused:>3}%   {d.dev}')
+
+    ##############################################
+
+    def _load_backup_config(self) -> dict:
+        import yaml
+        config_path = SOURCE_PATH.joinpath('backup', 'config.yaml')
+        backup_config = yaml.load(config_path.read_text(), Loader=yaml.SafeLoader)
+        return backup_config
+
+    ##############################################
+
+    def _backup_config(self, name: str) -> list[Path]:
+        backup_config = self._load_backup_config()
+        config = backup_config[name]
+        backup_path = config['backup_path']
+        filter_path = SOURCE_PATH.joinpath('backup', 'filters', config['filter'])
+        return backup_path, filter_path
+
+    ##############################################
+
+    def check_rsync_filter(self, name: str) -> None:
+        from AdminToolkit.backup.rsync import RsyncBackup
+        _, filter_path = self._backup_config(name)
+        self.print(f"Filter is <green>{filter_path}</green>")
+        RsyncBackup.check_filter(filter_path)
+
+    ##############################################
+
+    def backup(self, name: str) -> None:
+        from AdminToolkit.backup.rsync import RsyncBackup
+        backup_path, filter_path = self._backup_config(name)
+        self.print(f"Backup target is <green>{backup_path}</green>")
+        self.print(f"Filter is <green>{filter_path}</green>")
+        _ = RsyncBackup(backup_path, filter_path)
+        _.run()
