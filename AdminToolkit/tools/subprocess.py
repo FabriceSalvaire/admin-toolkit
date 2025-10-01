@@ -6,8 +6,61 @@ __all__ = ['RUN_DANGEROUS', 'run_command', 'iter_on_command_output']
 
 import json
 import subprocess
+from dataclasses import dataclass
 
 from AdminToolkit.printer import atprint
+
+####################################################################################################
+
+MOCKUP = True
+DEBUG = True
+
+@dataclass
+class MockupCacheEntry:
+    cmd: list
+    stdout: str
+    stderr: str = ''
+
+    ##############################################
+    @property
+    def uuid(self) -> int:
+        return MockupCache.cmd_uuid(self.cmd)
+
+
+class MockupCache:
+
+    ##############################################
+
+    def __init__(self) -> None:
+        self._cache = {}
+
+    ##############################################
+
+    @classmethod
+    def cmd_uuid(cls, cmd: list) -> int:
+        return hash(cmd)
+
+    ##############################################
+
+    def add_mockup_cache(self, cmd: list, stdout: str, stderr: str = '') -> None:
+        uuid = self.cmd_uuid(cmd)
+        # uuid = entry.uuid
+        if uuid not in self._cache:
+            entry = MockupCacheEntry(cmd, stdout, stderr)
+            self._cache[uuid] = entry
+        else:
+            raise ValueError(f"Entry is already in mockup cache {cmd}")
+
+    ##############################################
+
+    def use_mockup(self, cmd: list) -> MockupCacheEntry:
+        if MOCKUP:
+            uuid = self.cmd_uuid(cmd)
+            return self._cache.get(uuid, None)
+        return None
+
+
+_mockup_cache = MockupCache()
 
 ####################################################################################################
 
@@ -31,23 +84,40 @@ def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
 
 ####################################################################################################
 
-def run_command(cmd: list[str], to_json: bool = False, to_bytes: bool = False, print_output: bool = False) -> str:
-    process = subprocess.run(cmd, capture_output=True)
-    if print_output:
-        atprint('<blue>-- stderr</blue>')
-        atprint(process.stderr.decode('utf8'))
-        atprint('<blue>-- stdout</blue>')
-        atprint(process.stdout.decode('utf8'))
-    _ = process.stdout
+def run_command(
+    cmd: list[str],
+    to_json: bool = False,
+    to_bytes: bool = False,
+    print_output: bool = False,
+) -> str:
+    if DEBUG:
+        atprint(f'<red>run_command:</red> {cmd}')
+    _ = _mockup_cache.use_mockup(cmd)
+    if _ is not None:
+        stdout = _.stdout
+        stderr = _.stderr
+    else:
+        process = subprocess.run(cmd, capture_output=True)
+        stdout = process.stdout
+        if print_output:
+            stderr = process.stderr.decode('utf8')
+            atprint('<blue>-- stderr</blue>')
+            atprint(stderr)
+            atprint('<blue>-- stdout</blue>')
+            atprint(stdout.decode('utf8'))
     if to_bytes:
-        return _
-    _ = _.decode('utf8')
+        return stdout
+    stdout = stdout.decode('utf8')
+    if DEBUG:
+        atprint('--- STDOUT ' + '-'*30)
+        atprint(stdout)
+        atprint('-'*50)
     if to_json:
         try:
-            return json.loads(_)
+            return json.loads(stdout)
         except json.decoder.JSONDecodeError:
-            raise NameError(f'{cmd} -> {_}')
-    return _
+            raise NameError(f'{cmd} -> {stdout}')
+    return stdout
 
 ####################################################################################################
 

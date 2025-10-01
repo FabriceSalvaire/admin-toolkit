@@ -169,9 +169,13 @@ class BlockDevice:
 
     def __init__(self, dev_path: str | Path) -> None:
         self.dev_path = to_dev_path(dev_path)
+        # Fixme: can return None
         self._lsblk = lsblk(self.dev_path)
         self._read_gpt_table()
+        # if self._lsblk is not None:
         self.partitions = [Partition(self, _) for _ in self._lsblk.children]
+        # else:
+        #     self.partitions = None
         self.links = dev_links(self.name)
 
     ##############################################
