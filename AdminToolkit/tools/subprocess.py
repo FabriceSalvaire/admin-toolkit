@@ -55,8 +55,11 @@ def run_command(
     if print_output or DEBUG:
         def _print(_):
             if isinstance(_, bytes):
-                _ = _.decode('utf8')
-            atprint(_)
+                try:
+                    _ = _.decode('utf8')
+                    atprint(_)
+                except UnicodeDecodeError:
+                    pass
         LRULE = '<blue>-- '
         RRULE = '-'*30 + '</blue>'
         atprint(f'{LRULE} stderr {RRULE}')

@@ -4,7 +4,7 @@
 
 """
 
-__all__ = ['Device', 'devices']
+__all__ = ['BlockDevice']
 
 ####################################################################################################
 
@@ -13,7 +13,6 @@ __all__ = ['Device', 'devices']
 
 ####################################################################################################
 
-from collections import namedtuple
 from pathlib import Path
 # from pprint import pprint
 from typing import Iterator
@@ -21,98 +20,95 @@ from typing import Iterator
 import json
 import subprocess
 
+from AdminToolkit import common_path as cp
 from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
-from AdminToolkit.tools.dict import bool_from_json, fix_dict_key
+from AdminToolkit.tools.object import bool_from_json, fix_dict_key, namedtuple_factory
 from .partition import parted
 from .tool import to_dev_path, is_sd
 
 ####################################################################################################
 
-LSBLK = '/usr/bin/lsblk'
-
-SYS_BLOCK = Path('/sys/block')
-DEV_DISK = Path('/dev/disk')
-
-LSBLK_FIELDS = (
-    'alignment',
-    'children',
-    'dax',
-    'disc_aln',
-    'disc_gran',
-    'disc_max',
-    'disc_zero',
-    'disk_seq',
-    'fsavail',
-    'fsroots',
-    'fssize',
-    'fstype',
-    'fsusep',
-    'fsused',
-    'fsver',
-    'group',
-    'hctl',
-    'hotplug',
-    'id',
-    'id_link',
-    'kname',
-    'label',
-    'log_sec',
-    'maj',
-    'maj_min',
-    'min',
-    'min_io',
-    'mode',
-    'model',
-    'mountpoint',
-    'mountpoints',
-    'mq',
-    'name',
-    'opt_io',
-    'owner',
-    'partflags',
-    'partlabel',
-    'partn',
-    'parttype',
-    'parttypename',
-    'partuuid',
-    'path',
-    'phy_sec',
-    'pkname',
-    'pttype',
-    'ptuuid',
-    'ra',
-    'rand',
-    'rev',
-    'rm',
-    'ro',
-    'rota',
-    'rq_size',
-    'sched',
-    'serial',
-    'size',
-    'start',
-    'state',
-    'subsystems',
-    'tran',
-    'type',
-    'uuid',
-    'vendor',
-    'wsame',
-    'wwn',
-    'zone_amax',
-    'zone_app',
-    'zone_nr',
-    'zone_omax',
-    'zone_sz',
-    'zone_wgran',
-    'zoned',
-)
+LsblkData = namedtuple_factory(
+    'LsblkData',
+    (
+        'alignment',
+        'children',
+        'dax',
+        'disc_aln',
+        'disc_gran',
+        'disc_max',
+        'disc_zero',
+        'disk_seq',
+        'fsavail',
+        'fsroots',
+        'fssize',
+        'fstype',
+        'fsusep',
+        'fsused',
+        'fsver',
+        'group',
+        'hctl',
+        'hotplug',
+        'id',
+        'id_link',
+        'kname',
+        'label',
+        'log_sec',
+        'maj',
+        'maj_min',
+        'min',
+        'min_io',
+        'mode',
+        'model',
+        'mountpoint',
+        'mountpoints',
+        'mq',
+        'name',
+        'opt_io',
+        'owner',
+        'partflags',
+        'partlabel',
+        'partn',
+        'parttype',
+        'parttypename',
+        'partuuid',
+        'path',
+        'phy_sec',
+        'pkname',
+        'pttype',
+        'ptuuid',
+        'ra',
+        'rand',
+        'rev',
+        'rm',
+        'ro',
+        'rota',
+        'rq_size',
+        'sched',
+        'serial',
+        'size',
+        'start',
+        'state',
+        'subsystems',
+        'tran',
+        'type',
+        'uuid',
+        'vendor',
+        'wsame',
+        'wwn',
+        'zone_amax',
+        'zone_app',
+        'zone_nr',
+        'zone_omax',
+        'zone_sz',
+        'zone_wgran',
+        'zoned',
+    ))
 
 ####################################################################################################
 
 def from_lsblk_dict(d: dict):
-    LsblkData = namedtuple('LsblkData', LSBLK_FIELDS, defaults=[None]*len(LSBLK_FIELDS))
     fix_dict_key(d)
     for key, value in d.items():
         if isinstance(value, (str)):
@@ -123,14 +119,14 @@ def from_lsblk_dict(d: dict):
     return LsblkData(**d)
 
 def lsblk(dev_path: str | Path) -> dict:
-    # sblk command reads the sysfs filesystem and udev db to gather
+    # lsblk command reads the sysfs filesystem and udev db to gather
     # information. If the udev db is not available or lsblk is
     # compiled without udev support, then it tries to read LABELs,
     # UUIDs and filesystem types from the block device. In this case
     # root permissions are necessary.
     dev_path = to_dev_path(dev_path)
     cmd = (
-        LSBLK,
+        cp.LSBLK,
         '--bytes',
         '--output-all',
         '--json',
@@ -148,22 +144,34 @@ def lsblk(dev_path: str | Path) -> dict:
 
 ####################################################################################################
 
-def dev_links(name: str) -> list[Path]:
-    links = []
-    for root, _, files in DEV_DISK.walk():
-        root = Path(root)
-        for filename in files:
-            link = root.joinpath(filename)
-            if link.is_symlink():
-                _ = link.readlink().name
-                if _ == name:
-                    links.append(link)
-    links.sort(key=lambda _: str(_))
-    return links
-
-####################################################################################################
-
 class BlockDevice:
+
+    ##############################################
+
+    @classmethod
+    def devices(cls) -> Iterator['BlockDevice']:
+        """Return an iterator on BlockDevice"""
+        for _ in cp.SYS_BLOCK.iterdir():
+            if is_sd(_.name):
+                device = BlockDevice(_.name)
+                yield device
+
+    ##############################################
+
+    @classmethod
+    def dev_links(cls, name: str) -> list[Path]:
+        """Return the list of links for a device"""
+        links = []
+        for root, _, files in cp.DEV_DISK.walk():
+            root = Path(root)
+            for filename in files:
+                link = root.joinpath(filename)
+                if link.is_symlink():
+                    _ = link.readlink().name
+                    if _ == name:
+                        links.append(link)
+        links.sort(key=lambda _: str(_))
+        return links
 
     ##############################################
 
@@ -176,7 +184,7 @@ class BlockDevice:
         self.partitions = [Partition(self, _) for _ in self._lsblk.children]
         # else:
         #     self.partitions = None
-        self.links = dev_links(self.name)
+        self.links = self.dev_links(self.name)
 
     ##############################################
 
@@ -273,7 +281,7 @@ class Partition:
         else:
             # Fixme: raise ...
             self._gpt = None
-        self.links = dev_links(self.name)
+        self.links = BlockDevice.dev_links(self.name)
 
     ##############################################
 
@@ -396,11 +404,3 @@ class Partition:
     @property
     def gpt_flags(self) -> [str]:
         return self._gpt.flags
-
-####################################################################################################
-
-def devices() -> Iterator[BlockDevice]:
-    for _ in SYS_BLOCK.iterdir():
-        if is_sd(_.name):
-            device = BlockDevice(_.name)
-            yield device

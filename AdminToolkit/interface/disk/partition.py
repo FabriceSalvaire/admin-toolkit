@@ -11,16 +11,12 @@ from pprint import pprint
 import struct
 import uuid
 
-from AdminToolkit.interface.user import raise_if_not_root
+from AdminToolkit import common_path as cp
 from AdminToolkit.danger import raise_if_root_device   # , CONFIRM_DANGER
-from AdminToolkit.tools.dict import fix_dict_key
+from AdminToolkit.interface.disk.tool import to_dev_path
+from AdminToolkit.interface.user import raise_if_not_root
+from AdminToolkit.tools.object import fix_dict_key
 from AdminToolkit.tools.subprocess import run_command, RUN_DANGEROUS
-from .tool import to_dev_path
-
-####################################################################################################
-
-DD = '/usr/bin/dd'
-PARTED = '/usr/bin/parted'
 
 ####################################################################################################
 
@@ -82,10 +78,10 @@ class GptTable:
 ####################################################################################################
 
 def parted(dev_path: str | Path) -> dict:
-    raise_if_not_root(PARTED)
+    raise_if_not_root(cp.PARTED)
     dev_path = to_dev_path(dev_path)
     cmd = (
-        PARTED,
+        cp.PARTED,
         '--json',
         str(dev_path),
         'unit s',
@@ -160,10 +156,10 @@ def _to_uuid(value: bytes) -> str:
 ####################################################################################################
 
 def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
-    raise_if_not_root(DD)
+    raise_if_not_root(cp.DD)
     dev_path = to_dev_path(dev_path)
     cmd = (
-        DD,
+        cp.DD,
         f'count={count}',
         f'if={dev_path}',
     )
@@ -173,11 +169,11 @@ def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
 
 def clear_device(dev_path: str | Path, count: int = 1) -> bytes:
     # !!! DANGER !!!
-    raise_if_not_root(DD)
+    raise_if_not_root(cp.DD)
     dev_path = to_dev_path(dev_path)
     raise_if_root_device(dev_path)
     cmd = (
-        DD,
+        cp.DD,
         f'count={count}',
         f'if=/dev/zero',
         f'of={dev_path}',

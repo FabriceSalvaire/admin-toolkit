@@ -8,22 +8,17 @@ from collections import namedtuple
 from pathlib import Path
 from pprint import pprint
 
+from AdminToolkit import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.tools.parse import split_line
+from AdminToolkit.tools.object import split_line
 from AdminToolkit.tools.subprocess import run_command, iter_on_command_output
-
-####################################################################################################
-
-MOUNT = '/usr/bin/mount'
-PROC_MOUNT = '/proc/self/mounts'
-VGS = '/usr/bin/vgs'
 
 ####################################################################################################
 
 def mount() -> list:
     MountInfo = namedtuple('MountInfo', ('dev', 'mountpoint', 'type', 'options'))
     cmd = (
-        MOUNT,
+        cp.MOUNT,
     )
     mount_points = []
     for line in iter_on_command_output(cmd):
@@ -40,11 +35,11 @@ def mount() -> list:
             mount_points.append(mountinfo)
     return mount_points
 
-####################################################################################################    return mount_points
+####################################################################################################
 
 def proc_mount() -> list:
     ProcMountInfo = namedtuple('ProcMountInfo', ('dev', 'mountpoint', 'type', 'options', 'fs_freq', 'fs_passno'))
-    _ = Path(PROC_MOUNT).read_text()
+    _ = cp.PROC_MOUNT.read_text()
     mount_points = []
     for line in _.splitlines():
         if line.startswith('/dev'):
@@ -76,9 +71,9 @@ def get_root_device() -> str:
                 parts[-1] = parts[-1].split('-')[0]
                 vg_name = '-'.join(parts)
                 # print(vg_name)
-                raise_if_not_root(VGS)
+                raise_if_not_root(cp.VGS)
                 cmd = (
-                    VGS,
+                    cp.VGS,
                     '--rows',
                     '--options=pv_name',
                     vg_name,

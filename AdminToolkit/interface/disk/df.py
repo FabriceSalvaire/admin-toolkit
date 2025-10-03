@@ -1,36 +1,33 @@
 ####################################################################################################
 
-from collections import namedtuple
+from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint
 
+from AdminToolkit import common_path as cp
 from AdminToolkit.tools.format import byte_humanize
-from AdminToolkit.tools.parse import split_line
+from AdminToolkit.tools.object import split_line
 from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
 
-DF = '/usr/bin/df'
-
-ROOT = Path('/')
 EXCLUDED_MOUNTPOINTS = ('dev', 'sys', 'tmp')
 
 ####################################################################################################
 
-DfInfoBase = namedtuple(
-    'DfInfoBase', (
-        'dev',
-        'size',
-        'used',
-        'free',
-        'pused',
-        'mountpoint',
-    ),
-)
+@dataclass
+class DfInfo:
 
-class DfInfo(DfInfoBase):
+    # df sorted
+    dev: str
+    size: int
+    used: int
+    free: int
+    pused: int
+    mountpoint: str
 
-    @property
+    ##############################################
+
     def hsize(self) -> str:
         return byte_humanize(self.size)
 
@@ -44,11 +41,10 @@ class DfInfo(DfInfoBase):
 
 ####################################################################################################
 
-
 def df() -> list:
     df_infos = []
     cmd = (
-        DF,
+        cp.DF,
     )
     for line in iter_on_command_output(cmd, skip_first_lines=1):
         _ = split_line(
@@ -62,7 +58,7 @@ def df() -> list:
         df_info = DfInfo(*_)
         # print(df_info)
         parts = df_info.mountpoint.parts
-        if (df_info.mountpoint == ROOT
+        if (df_info.mountpoint == cp.ROOT
             or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
             if len(parts) > 2 and parts[1] == 'run' and parts[2] != 'media':
                 continue

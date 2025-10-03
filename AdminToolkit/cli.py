@@ -396,8 +396,6 @@ class CliBase:
                     default = ''
                 self.print(f'  <blue>{_.name}</blue>: <green>{_.annotation.__name__}</green>{default}')
 
-    ##############################################
-
 ####################################################################################################
 
 # Fixme: collect and complete
@@ -407,8 +405,8 @@ class Cli(CliBase):
     ##############################################
 
     def devices(self) -> None:
-        from AdminToolkit.interface.disk.device import devices
-        devices = devices()
+        from AdminToolkit.interface.disk.device import BlockDevice
+        devices = BlockDevice.devices()
         for device in sorted(devices, key=lambda _: _.name):
             self.print()
             self.print(f'<blue>{device.name}</blue>')

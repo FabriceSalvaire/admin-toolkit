@@ -1,22 +1,18 @@
 ####################################################################################################
 
-# from collections import namedtuple
 # from pathlib import Path
 from pprint import pprint
 
+# from AdminToolkit import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import to_namedtuple
 from AdminToolkit.tools.subprocess import run_command
 
 ####################################################################################################
 
-PVDISPLAY = '/usr/bin/pvdisplay'
-XVS = '/usr/bin/{}s'
-
-####################################################################################################
-
 def call_xvs(name: str) -> list:
     raise_if_not_root('lvm ...vs command')
+    XVS = '/usr/bin/{}s'
     cmd = (
         XVS.format(name),
         '--units=s',
