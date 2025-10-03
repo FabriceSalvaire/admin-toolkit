@@ -17,13 +17,11 @@ from pathlib import Path
 # from pprint import pprint
 from typing import Iterator
 
-import json
-import subprocess
-
 from AdminToolkit import common_path as cp
 from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
-from AdminToolkit.tools.object import bool_from_json, fix_dict_key, namedtuple_factory
+from AdminToolkit.tools.object import namedtuple_factory
+from AdminToolkit.tools.subprocess import run_command
 from .partition import parted
 from .tool import to_dev_path, is_sd
 
@@ -108,16 +106,6 @@ LsblkData = namedtuple_factory(
 
 ####################################################################################################
 
-def from_lsblk_dict(d: dict):
-    fix_dict_key(d)
-    for key, value in d.items():
-        if isinstance(value, (str)):
-            if value in ('true', 'false'):
-                d[key] = bool_from_json(value)
-    if 'children' in d:
-        d['children'] = [from_lsblk_dict(_) for _ in d['children']]
-    return LsblkData(**d)
-
 def lsblk(dev_path: str | Path) -> dict:
     # lsblk command reads the sysfs filesystem and udev db to gather
     # information. If the udev db is not available or lsblk is
@@ -132,15 +120,13 @@ def lsblk(dev_path: str | Path) -> dict:
         '--json',
         str(dev_path),
     )
-    process = subprocess.run(cmd, capture_output=True)
-    _ = process.stdout.decode('utf8')
-    try:
-        data = json.loads(_)
-    except json.decoder.JSONDecodeError:
-        raise NameError(f'{cmd} -> {_}')
+    data = run_command(
+        cmd,
+        to_json=True,
+        cls_map={'children': lambda value: [LsblkData(**_) for _ in value]},
+    )
     _ = data['blockdevices'][0]
-    _ = from_lsblk_dict(_)
-    return _
+    return LsblkData(**_)
 
 ####################################################################################################
 

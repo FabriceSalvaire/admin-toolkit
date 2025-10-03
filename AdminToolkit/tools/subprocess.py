@@ -9,10 +9,11 @@ import subprocess
 
 from AdminToolkit.printer import atprint
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
+from AdminToolkit.tools.object import load_json
 
 ####################################################################################################
 
-DEBUG = True
+DEBUG = False
 
 ####################################################################################################
 
@@ -31,14 +32,15 @@ def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
         return run_command(cmd, **kwargs)
     except AbortAction:
         raise
-    except Exception:
-        raise
+    except Exception as e:
+         raise e
 
 ####################################################################################################
 
 def run_command(
     cmd: list[str],
     to_json: bool = False,
+    cls_map: dict = None,
     to_bytes: bool = False,
     print_output: bool = False,
 ) -> str:
@@ -73,7 +75,8 @@ def run_command(
         stdout = stdout.decode('utf8')
     if to_json:
         try:
-            return json.loads(stdout)
+            # return json.loads(stdout)
+            return load_json(stdout, cls_map)
         except json.decoder.JSONDecodeError:
             raise NameError(f'{cmd} -> {stdout}')
     return stdout

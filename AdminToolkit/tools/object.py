@@ -2,13 +2,16 @@
 
 __all__ = [
     'split_line',
+    # 'bool_from_json',
+    'fix_dict_key',
     'to_namedtuple', 'namedtuple_factory',
-    'bool_from_json', 'fix_dict_key',
 ]
 
 ####################################################################################################
 
 from collections import namedtuple
+from pprint import pprint
+import json
 
 ####################################################################################################
 
@@ -37,8 +40,8 @@ def split_line(line: str, filters: list, skip: list = ()) -> list:
 
 ####################################################################################################
 
-def bool_from_json(value: str) -> bool:
-    return value == 'true'
+# def bool_from_json(value: str) -> bool:
+#     return value == 'true'
 
 ####################################################################################################
 
@@ -52,6 +55,38 @@ def fix_dict_key(d: dict) -> dict:
             d[new_key] = d[key]
             del d[key]
     return d
+
+####################################################################################################
+
+def load_json(stream: str, cls_map: dict = None) -> dict:
+    def object_hook(d):
+        # print('---')
+        # print('object_hook')
+        # pprint(d)
+        # print('---')
+        fix_dict_key(d)
+        for key, value in d.items():
+            match value:
+                case 'true':
+                    d[key] = True
+                case 'false':
+                    d[key] = False
+        for key in d.keys():
+            if cls_map and key in cls_map:
+                _ = d[key]
+                d[key] = cls_map[key](_)
+        return d
+
+    data = json.loads(
+        stream,
+        # cls=None,
+        object_hook=object_hook,
+        parse_float=None,  # float(num_str)
+        # parse_int=None,   # int(num_str)
+        # parse_constant=None,
+        # object_pairs_hook=object_hook,
+    )
+    return data
 
 ####################################################################################################
 
@@ -72,3 +107,25 @@ def namedtuple_factory(cls_name: str, fields: [str]):
         fields,
         defaults=[None]*len(fields),
     )
+
+####################################################################################################
+
+
+if __name__ == '__main__':
+
+    stream = '''
+{
+    "f1": "abc",
+    "f2": "123",
+    "f3": "1.23",
+    "f4": 123,
+    "f5": 1.23,
+    "f6": "true",
+    "f7": "false",
+    "d1": {
+        "a": [1, 2, 3],
+        "b": "b"
+    }
+}
+'''
+    pprint(load_json(stream))
