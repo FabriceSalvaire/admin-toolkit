@@ -5,6 +5,7 @@ __all__ = ['partion_to_device']
 ####################################################################################################
 
 from collections import namedtuple
+from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint
 import struct
@@ -47,48 +48,36 @@ def fix_s_unit(d: dict) -> None:
 
 ####################################################################################################
 
-_fields = (
-    'end',
-    'filesystem',
-    'flags',
-    'name',
-    'number',
-    'size',
-    'start',
-    'type',
+@dataclass
+class GptPartion:
+    end: int = None
+    filesystem: str = None
+    flags: str = None
+    name: str = None
+    number: int = None
+    size: int = None
+    start: int = None
+    type: str = None
     # For GPT
-    'type_uuid',
-    'uuid',
+    type_uuid: str = None
+    uuid: str = None
     # for MsDOS
-    'type_id',
-)
-
-GptPartion = namedtuple(
-    'GptPartion',
-    _fields,
-    defaults=[None]*len(_fields),
-)
+    type_id: str = None
 
 ####################################################################################################
 
-_fields = (
-    'label',
-    'logical_sector_size',
-    'max_partitions',
-    'model',
-    'partitions',
-    'path',
-    'physical_sector_size',
-    'size',
-    'transport',
-    'uuid',
-)
-
-GptTable = namedtuple(
-    'GptTable',
-    _fields,
-    defaults=[None]*len(_fields),
-)
+@dataclass
+class GptTable:
+    label: str = None
+    logical_sector_size: int = None
+    max_partitions: str = None
+    model: str = None
+    partitions: str = None
+    path: str = None
+    physical_sector_size: str = None
+    size: int = None
+    transport: str = None
+    uuid: str = None
 
 ####################################################################################################
 

@@ -1,5 +1,9 @@
 ####################################################################################################
 
+__all__ = ['to_namedtuple']
+
+####################################################################################################
+
 from collections import namedtuple
 
 ####################################################################################################
@@ -12,3 +16,12 @@ def to_namedtuple(cls: str, data: dict):
         fields = sorted(data.keys())
         _NAMEDTUPLE_CACHE[cls] = namedtuple(cls, fields)
     return _NAMEDTUPLE_CACHE[cls](**data)
+
+####################################################################################################
+
+def namedtuple_factory(cls_name: str, fields: [str]):
+    return namedtuple(
+        cls_name,
+        fields,
+        defaults=[None]*len(fields),
+    )

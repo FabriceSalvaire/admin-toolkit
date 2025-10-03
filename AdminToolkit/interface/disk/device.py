@@ -15,7 +15,7 @@ __all__ = ['Device', 'devices']
 
 from collections import namedtuple
 from pathlib import Path
-from pprint import pprint
+# from pprint import pprint
 from typing import Iterator
 
 import json
