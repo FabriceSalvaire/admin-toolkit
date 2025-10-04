@@ -40,6 +40,8 @@ DEV_DISK = DEV.joinpath('disk')
 
 DD = cmd('dd')
 DF = cmd('df')
+DU = cmd('du')
+LOCATE = cmd('plocate')
 LSBLK = cmd('lsblk')
 MDADM = cmd('mdadm')
 MOUNT = cmd('mount')

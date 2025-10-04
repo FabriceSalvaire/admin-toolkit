@@ -16,11 +16,8 @@
 
 from pathlib import Path
 
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.tools.subprocess import iter_on_command_output
-
-####################################################################################################
-
-DU = '/usr/bin/du'
 
 ####################################################################################################
 
@@ -112,7 +109,7 @@ def du(path: Path | str) -> int:
     # skip directories on different file systems
 
     cmd = (
-        DU,
+        cp.DU,
         '-b',   # --bytes
         '-c',   # --total
         '-x',   # --one-file-system

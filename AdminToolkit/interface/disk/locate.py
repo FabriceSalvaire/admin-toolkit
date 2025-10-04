@@ -12,11 +12,8 @@
 
 ####################################################################################################
 
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.tools.subprocess import iter_on_command_output
-
-####################################################################################################
-
-LOCATE = '/usr/bin/plocate'
 
 ####################################################################################################
 
@@ -85,7 +82,7 @@ def locate(pattern: str, basename: bool = False) -> list[str]:
     # do anything. This option thus exists only as compatibility with mlocate(1).
 
     cmd = (
-        LOCATE,
+        cp.LOCATE,
         '--basename',
         # '-r',
         # f'^{pattern}$',
