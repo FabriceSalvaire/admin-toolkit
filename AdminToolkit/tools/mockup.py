@@ -1,4 +1,10 @@
 ####################################################################################################
+#
+# AdminToolkit — ...
+# Copyright (C) 2025 Fabrice SALVAIRE
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+####################################################################################################
 
 __all__ = [
     'MOCKUP_CACHE',
@@ -16,7 +22,7 @@ from AdminToolkit.printer import atprint
 
 ####################################################################################################
 
-MOCKUP = True
+MOCKUP = False
 
 ####################################################################################################
 
@@ -95,8 +101,8 @@ class MockupCache:
     ##############################################
 
     def get(self, key) -> MockupCacheEntry:
-        atprint(f"<blue>Lookup mockup for</blue> {key}")
         if MOCKUP:
+            atprint(f"<blue>Lookup mockup for</blue> {key}")
             uuid = self.to_uuid(key)
             _ = self._cache.get(uuid, None)
             if _ is not None:

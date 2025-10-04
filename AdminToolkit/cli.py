@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# -
+# AdminToolkit — ...
 # Copyright (C) 2025 Fabrice SALVAIRE
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
