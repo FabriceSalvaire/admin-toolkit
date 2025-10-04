@@ -8,3 +8,4 @@
 
 DEBUG = False
 MOCKUP = False
+# MOCKUP = True

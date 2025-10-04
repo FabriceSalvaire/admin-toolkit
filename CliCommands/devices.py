@@ -5,7 +5,7 @@ __all__ = ['Devices']
 ####################################################################################################
 
 from collections import namedtuple
-# from pprint import pprint
+from pprint import pprint
 
 from AdminToolkit.cli import CommandGroup
 from AdminToolkit.tools.format import byte_humanize, fix_none, Table
@@ -153,3 +153,59 @@ class Devices(CommandGroup):
             else:
                 self.print(f'<green>{mountpoint:30}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {d.pused:>3}%   {d.dev}')
 
+    ##############################################
+
+    def mdraid(self) -> None:
+        from AdminToolkit.interface.disk.mdraid import MdRaidDevices
+        for _ in MdRaidDevices():
+            # pprint(_)
+            self.print(f"MD {_.raid_type.upper()} <blue>{_.name}</blue>")
+            self.print(f"  /dev/<green>{_.number_name}</green>")
+            devices = ' '.join(_.devices.values())
+            self.print(f"  devices: <green>{devices}</green>")
+
+    ##############################################
+
+    def lvm(self) -> None:
+        from AdminToolkit.interface.disk.lvm import LVM
+        lvm = LVM()
+        RULE = '-'*50
+        for vg in lvm.vgs:
+            self.print()
+            self.print(RULE)
+            self.print(f"<red>VG</red> <blue>{vg.name}</blue>")
+            self.print(f"  {vg.hsize} / {vg.hfree}")
+            self.print(f"  {vg.number_of_extents:_} / {vg.number_of_free_extents:_} extents of {vg.extent_hsize}")
+            _ = ' '.join([f"<green>{pv.name}</green>" for pv in vg.pvs])
+            self.print(f"  PV: {_}")
+
+            for lv in vg.lvs:
+                self.print('  ' + '-'*10)
+                self.print(f"  <red>LV</red> <blue>{lv.name}</blue>")
+                layout = ' '.join(lv.layout)
+                self.print(f"    {lv.hsize}   on {lv.number_of_segments} segments")
+                self.print(f"    layout: {layout}")
+
+        for pv in lvm.pvs:
+            self.print()
+            self.print(RULE)
+            self.print(f"<red>PV</red> <blue>{pv.name}</blue> — <blue>{pv.vg_name}</blue>")
+            self.print(f"  {pv.hsize} / {pv.hfree}")
+            self.print(f"  {pv.number_of_extents:_} / {pv.number_of_free_extents:_} extents")
+            start = 0
+
+            def print_segment(start: int, end: int, name: str = None) -> None:
+                size = end - start + 1
+                if name is None:
+                    name = "free segments"
+                self.print(f"  {start:9_} - {end:9_} / {size:9_} : <blue>{name}</blue>")
+
+            for sg in pv.segments:
+                if sg.start != start:
+                    end = sg.start - 1
+                    self.print_segment(start, end)
+                print_segment(sg.start, sg.end, sg.name)
+                start = sg.end + 1
+            if start != pv.number_of_extents:
+                end = pv.number_of_extents - 1
+                print_segment(start, end)

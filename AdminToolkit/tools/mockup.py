@@ -99,6 +99,7 @@ class MockupCache:
 
     def get(self, key) -> MockupCacheEntry:
         if MOCKUP:
+            import AdminToolkit.mockup_config
             atprint(f"<blue>Lookup mockup for</blue> {key}")
             uuid = self.to_uuid(key)
             _ = self._cache.get(uuid, None)
