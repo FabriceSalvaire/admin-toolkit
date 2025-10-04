@@ -5,16 +5,11 @@ __all__ = ['Devices']
 ####################################################################################################
 
 from collections import namedtuple
-from pprint import pprint
-import getpass
-import inspect
-import os
-import traceback
+# from pprint import pprint
 
 from pathlib import Path
 
 from AdminToolkit.cli import CommandGroup
-from AdminToolkit.interface.disk.tool import to_dev_path
 from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
@@ -44,11 +39,11 @@ class Devices(CommandGroup):
     ##############################################
 
     def is_root(self, name: str) -> None:
-        from AdminToolkit.danger import raise_if_root_device, AbortAction
+        from AdminToolkit.danger import raise_if_root_device, IsRootAbortAction
         try:
             raise_if_root_device(name)
             self.print('is <green>safe</green> device')
-        except AbortAction:
+        except IsRootAbortAction:
             self.print('is <red>root</red> device')
 
     ##############################################

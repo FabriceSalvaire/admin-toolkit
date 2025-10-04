@@ -29,6 +29,9 @@ LINESEP = os.linesep
 class AbortAction(NameError):
     pass
 
+class IsRootAbortAction(AbortAction):
+    pass
+
 ####################################################################################################
 
 def raise_if_root_device(name: str | Path):
@@ -43,7 +46,7 @@ def raise_if_root_device(name: str | Path):
     name = str(partion_to_device(name))
     atprint(f"Resolved to <blue>{name}</blue>")
     if root_device == name:
-        raise AbortAction(f'Device {name} is root device')
+        raise IsRootAbortAction(f'Device {name} is root device')
 
 ####################################################################################################
 

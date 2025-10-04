@@ -36,6 +36,7 @@ class DfInfo:
 
     ##############################################
 
+    @property
     def hsize(self) -> str:
         return byte_humanize(self.size)
 

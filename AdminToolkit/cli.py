@@ -231,7 +231,7 @@ class Cli:
         self._modules = {}
         self._import_commands(commands_path)
         self._command_map = {}
-        self._lookup_commands(self)
+        self._lookup_commands(self.__class__)
         for _ in CommandGroup.SUBCLASSES:
             self._lookup_commands(_)
         self._commands = sorted(self._command_map.keys())
@@ -272,7 +272,17 @@ class Cli:
 
     ##############################################
 
+    def _print_invalid_command(self, query: str) -> None:
+        self.print(f"<red>Invalid command</red> <blue>{query}</blue>")
+
+    ##############################################
+
     def _process_line(self, query: str) -> bool:
+        if '<' in query:
+            # Fixme:
+            query = query.replace('<', '...')
+            self._print_invalid_command(query)
+            return True
         # try:
         command, *argument = query.split()
         # except ValueError:
@@ -288,14 +298,14 @@ class Cli:
             except RootPermissionRequired as e:
                 # self.print('Root privileges are required')
                 self.print('<red>' + str(e) + '</red>')
-            except AbortAction:
-                self.print(f"<red>Aborded</red>")
+            except AbortAction as e:
+                self.print(f"<red>Aborded</red> {e}")
             except ValueError as e:
                 self.print(f"<red>{e}</red>")
             except Exception as e:
                 print(traceback.format_exc())
                 print(e)
-        except AttributeError:
+        except KeyError:
             self.print(f"<red>Invalid command</red> <blue>{query}</blue>")
             self.usage()
         return True
@@ -362,7 +372,7 @@ class Cli:
     def usage(self) -> None:
         user = getpass.getuser()
         if user == 'root':
-            user_message = f'You are <red>SuperUser</red> !!!'
+            user_message = 'You are <red>SuperUser</red> !!!'
         else:
             user_message = f'User is <green>{user}</green>'
         for _ in (
@@ -392,10 +402,13 @@ class Cli:
         if not command:
             self.usage()
         else:
-            func = getattr(self, command)
+            try:
+                method = self._command_map[command]
+            except KeyError:
+                raise AbortAction(f"any {command} command")
             # help(func)
-            self.print(f'<blue>{func.__doc__}</blue>')
-            signature = inspect.signature(func)
+            self.print(f'<blue>{method.__doc__}</blue>')
+            signature = inspect.signature(method)
             for _ in signature.parameters.values():
                 if _.default != inspect._empty:
                     default = f' = <orange>{_.default}</orange>'
