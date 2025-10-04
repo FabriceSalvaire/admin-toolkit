@@ -1,11 +1,18 @@
 ####################################################################################################
 
-__all__ = ['MOCKUP_CACHE', 'MockupCacheEntry', 'CmdMockupCacheEntry', 'FileMockupCacheEntry']
+__all__ = [
+    'MOCKUP_CACHE',
+    'MockupCacheEntry',
+    'CmdMockupCacheEntry',
+    'FileMockupCacheEntry',
+]
 
 ####################################################################################################
 
 from dataclasses import dataclass
 from pathlib import Path
+
+from AdminToolkit.printer import atprint
 
 ####################################################################################################
 
@@ -88,9 +95,13 @@ class MockupCache:
     ##############################################
 
     def get(self, key) -> MockupCacheEntry:
+        atprint(f"<blue>Lookup mockup for</blue> {key}")
         if MOCKUP:
             uuid = self.to_uuid(key)
-            return self._cache.get(uuid, None)
+            _ = self._cache.get(uuid, None)
+            if _ is not None:
+                atprint(f"<red>Found mockup for</red> {key}")
+            return _
         return None
 
     ##############################################

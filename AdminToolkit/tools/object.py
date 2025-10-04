@@ -66,11 +66,24 @@ def load_json(stream: str, cls_map: dict = None) -> dict:
         # print('---')
         fix_dict_key(d)
         for key, value in d.items():
+            if not value:
+                continue
             match value:
                 case 'true':
                     d[key] = True
                 case 'false':
                     d[key] = False
+                case str():
+                    if '.' in value:
+                        try:
+                            d[key] = float(value)
+                        except ValueError:
+                            pass
+                    elif value[0].isnumeric():
+                        try:
+                            d[key] = int(value)
+                        except ValueError:
+                            pass
         for key in d.keys():
             if cls_map and key in cls_map:
                 _ = d[key]
