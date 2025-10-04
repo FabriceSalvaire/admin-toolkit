@@ -8,3 +8,14 @@ cli_history
 doc/sphinx/build/
 doc/sphinx/source/api/
 doc/sphinx/source/apidocs/
+
+__NOTES__.md
+backup/
+bug.txt
+log.md
+notes/idea.md
+notes/related-projects.md
+sda.dump
+sdc.dump
+
+__header__.py
