@@ -13,13 +13,10 @@ __all__ = ['RUN_DANGEROUS', 'run_command', 'iter_on_command_output']
 import json
 import subprocess
 
+from AdminToolkit.config import DEBUG
 from AdminToolkit.printer import atprint
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
 from AdminToolkit.tools.object import load_json
-
-####################################################################################################
-
-DEBUG = False
 
 ####################################################################################################
 

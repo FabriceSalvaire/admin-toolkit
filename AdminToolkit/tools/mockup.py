@@ -18,11 +18,8 @@ __all__ = [
 from dataclasses import dataclass
 from pathlib import Path
 
+from AdminToolkit.config import MOCKUP
 from AdminToolkit.printer import atprint
-
-####################################################################################################
-
-MOCKUP = False
 
 ####################################################################################################
 
