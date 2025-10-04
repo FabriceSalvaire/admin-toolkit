@@ -6,10 +6,11 @@
 #
 ####################################################################################################
 
-# from os import PathLike
 from pathlib import Path
-from typing import AnyStr, List, Union
-import os
+from typing import AnyStr, List
+
+# import os
+# from os import PathLike
 
 ####################################################################################################
 
@@ -19,12 +20,11 @@ class WalkerAbc:
 
     ##############################################
 
-    # def __init__(self, path : Union[AnyStr, PathLike[AnyStr]]) -> None:
-    def __init__(self, path: Union[AnyStr, Path]) -> None:
+    def __init__(self, path: AnyStr | Path) -> None:
         # Make the path absolute, resolving any symlinks.
         self._path = Path(path).expanduser().resolve()
         if not self._path.exists():
-            raise ValueError(f"Path {self._path} doesn't exists")
+            raise ValueError(f"Path {path} doesn't exists")
 
     ##############################################
 
@@ -37,15 +37,22 @@ class WalkerAbc:
     def run(self,
             top_down: bool = False,
             sort: bool = False,
-            follow_links: bool = False,
+            follow_symlinks: bool = False,
             max_depth: int = -1,
             ) -> None:
         if max_depth >= 0:
             top_down = True
             depth = 0
         # to avoid UnicodeEncodeError: surrogates not allowed
-        top = str(self._path).encode('utf-8')
-        for dirpath, dirnames, filenames in os.walk(top, topdown=top_down, followlinks=follow_links):
+        # top = str(self._path).encode('utf-8')
+        # for dirpath, dirnames, filenames in os.walk(top, topdown=top_down, followlinks=follow_links):
+        # https://docs.python.org/3/library/pathlib.html#pathlib.Path.walk
+
+        def on_error(exception):
+            # exception.filename, 
+            print(exception)
+
+        for dirpath, dirnames, filenames in self._path.walk(top_down=top_down, on_error=on_error, follow_symlinks=follow_symlinks):
             # dirnames and filenames are List[bytes]
             if top_down and sort:
                 self.sort_dirnames(dirnames)
