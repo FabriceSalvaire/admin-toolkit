@@ -14,7 +14,7 @@ from collections import namedtuple
 from pathlib import Path
 from pprint import pprint
 
-from AdminToolkit import common_path as cp
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import split_line
 from AdminToolkit.tools.subprocess import run_command, iter_on_command_output

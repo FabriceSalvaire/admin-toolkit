@@ -18,7 +18,7 @@ __all__ = [
 from dataclasses import dataclass
 from pathlib import Path
 
-from AdminToolkit.config import MOCKUP
+from AdminToolkit.config.config import MOCKUP
 from AdminToolkit.printer import atprint
 
 ####################################################################################################
@@ -99,7 +99,7 @@ class MockupCache:
 
     def get(self, key) -> MockupCacheEntry:
         if MOCKUP:
-            import AdminToolkit.mockup_config
+            import AdminToolkit.config.mockup_config
             atprint(f"<blue>Lookup mockup for</blue> {key}")
             uuid = self.to_uuid(key)
             _ = self._cache.get(uuid, None)

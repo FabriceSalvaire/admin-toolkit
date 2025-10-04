@@ -23,7 +23,7 @@ from pathlib import Path
 # from pprint import pprint
 from typing import Iterator
 
-from AdminToolkit import common_path as cp
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.object import namedtuple_factory

@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-from AdminToolkit import common_path as cp
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
 
 ####################################################################################################

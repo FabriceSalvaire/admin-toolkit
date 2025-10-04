@@ -16,7 +16,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Iterator
 
-from AdminToolkit import common_path as cp
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import to_namedtuple
 from AdminToolkit.tools.subprocess import run_command

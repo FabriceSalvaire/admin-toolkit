@@ -9,7 +9,7 @@
 from pathlib import Path
 from dataclasses import dataclass
 
-from AdminToolkit import common_path as cp
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
 from AdminToolkit.tools.subprocess import iter_on_command_output
 
