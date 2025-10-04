@@ -39,8 +39,6 @@ from AdminToolkit.interface.user import RootPermissionRequired
 
 LINESEP = os.linesep
 
-SOURCE_PATH = Path(__file__).resolve().parents[1]
-
 type CommandName = str
 
 ####################################################################################################
