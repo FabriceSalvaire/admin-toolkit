@@ -5,9 +5,10 @@ __all__ = ['Devices']
 ####################################################################################################
 
 from collections import namedtuple
+from pathlib import Path
 from pprint import pprint
 
-from AdminToolkit.cli import CommandGroup
+from AdminToolkit.cli import CommandGroup, DevPath
 from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
@@ -46,13 +47,13 @@ class Devices(CommandGroup):
 
     ##############################################
 
-    def clear_device(self, dev_path: str) -> None:
+    def clear_device(self, dev_path: DevPath) -> None:
         from AdminToolkit.interface.disk.partition import clear_device
         clear_device(dev_path)   # , print_output=True
 
     ##############################################
 
-    def parts(self, dev_path: str) -> None:
+    def parts(self, dev_path: DevPath) -> None:
         from AdminToolkit.interface.disk.device import BlockDevice
         device = BlockDevice(dev_path)
         self.print(f'<blue>{device.name}</blue> -> <blue>{device.resolved_dev_path}</blue>')
@@ -99,7 +100,7 @@ class Devices(CommandGroup):
 
     ##############################################
 
-    def partfs(self, dev_path: str) -> None:
+    def partfs(self, dev_path: DevPath) -> None:
         from AdminToolkit.interface.disk.device import BlockDevice
         device = BlockDevice(dev_path)
         self.print(f'<blue>{device.name}</blue>')

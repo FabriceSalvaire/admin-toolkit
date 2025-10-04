@@ -14,22 +14,25 @@ import getpass
 import importlib.util
 import inspect
 import os
+import re
 import traceback
 
 from pathlib import Path
 from pprint import pprint
+from typing import Iterable
 
 # See also [cmd — Support for line-oriented command interpreters — Python documentation](https://docs.python.org/3/library/cmd.html)
 # Python Prompt Toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/)
 from prompt_toolkit import PromptSession, HTML
 from prompt_toolkit import print_formatted_text, shortcuts
 from prompt_toolkit.completion import WordCompleter, Completer, Completion, CompleteEvent
-# from prompt_toolkit.document import Document
+from prompt_toolkit.document import Document
 # from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.history import FileHistory
 # from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.styles import Style
 
+from AdminToolkit.config import common_path as cp
 from AdminToolkit.danger import AbortAction
 from AdminToolkit.interface.user import RootPermissionRequired
 
@@ -40,6 +43,10 @@ from AdminToolkit.interface.user import RootPermissionRequired
 LINESEP = os.linesep
 
 type CommandName = str
+type DevPath = str
+type DirectoryPath = str
+type FilePath = str
+type AnyPath = str
 
 ####################################################################################################
 
@@ -81,122 +88,124 @@ class CustomCompleter(Completer):
     ##############################################
 
     # cf. prompt_toolkit/completion/word_completer.py
-    # def _get_completions(
-    #         self,
-    #         document: Document,
-    #         complete_event: CompleteEvent,
-    #         words: list[str],
-    #         separator: str,
-    # ) -> Iterable[Completion]:
-    #     # Get list of words.
-    #     # if callable(words):
-    #     #     words = words()
+    def _get_completions(
+            self,
+            document: Document,
+            complete_event: CompleteEvent,
+            words: list[str],
+            separator: str,
+    ) -> Iterable[Completion]:
+        # Get list of words.
+        # if callable(words):
+        #     words = words()
 
-    #     # Get word/text before cursor.
-    #     # if self.sentence:
-    #     #     word_before_cursor = document.text_before_cursor
-    #     # else:
-    #     # word_before_cursor = document.get_word_before_cursor(
-    #     #     WORD=self.WORD, pattern=self.pattern
-    #     # )
-    #     line = document.current_line
-    #     index = line.rfind(separator)
-    #     word_before_cursor = line[index+1:]
+        # Get word/text before cursor.
+        # if self.sentence:
+        #     word_before_cursor = document.text_before_cursor
+        # else:
+        # word_before_cursor = document.get_word_before_cursor(
+        #     WORD=self.WORD, pattern=self.pattern
+        # )
+        line = document.current_line
+        index = line.rfind(separator)
+        word_before_cursor = line[index+1:]
 
-    #     if self.ignore_case:
-    #         word_before_cursor = word_before_cursor.lower()
+        if self.ignore_case:
+            word_before_cursor = word_before_cursor.lower()
 
-    #     def word_matches(word: str) -> bool:
-    #         """True when the word before the cursor matches."""
-    #         if self.ignore_case:
-    #             word = word.lower()
+        def word_matches(word: str) -> bool:
+            """True when the word before the cursor matches."""
+            if self.ignore_case:
+                word = word.lower()
 
-    #         if self.match_middle:
-    #             return word_before_cursor in word
-    #         else:
-    #             return word.startswith(word_before_cursor)
+            if self.match_middle:
+                return word_before_cursor in word
+            else:
+                return word.startswith(word_before_cursor)
 
-    #     for _ in words:
-    #         if word_matches(_):
-    #             # display = self.display_dict.get(_, _)
-    #             # display_meta = self.meta_dict.get(_, "")
-    #             yield Completion(
-    #                 text=_,
-    #                 start_position=-len(word_before_cursor),
-    #                 # display=display,
-    #                 # display_meta=display_meta,
-    #             )
+        for _ in words:
+            if word_matches(_):
+                # display = self.display_dict.get(_, _)
+                # display_meta = self.meta_dict.get(_, "")
+                yield Completion(
+                    text=_,
+                    start_position=-len(word_before_cursor),
+                    # display=display,
+                    # display_meta=display_meta,
+                )
 
     ##############################################
 
-    # def get_completions(
-    #         self,
-    #         document: Document,
-    #         complete_event: CompleteEvent,
-    # ) -> Iterable[Completion]:
-    #     line = document.current_line.lstrip()
-    #     # remove multiple spaces
-    #     line = re.sub(' +', ' ', line)
-    #     number_of_parameters = line.count(' ')
-    #     command = None
-    #     right_word = None
-    #     parameter_type = None
-    #     if number_of_parameters:
-    #         # words = [_ for _ in line.split(' ') if _]
-    #         # command = words[0]
-    #         index = line.rfind(' ')
-    #         right_word = line[index+1:]
-    #         index = line.find(' ')
-    #         command = line[:index]
-    #         try:
-    #             func = getattr(Cli, command)
-    #             signature = inspect.signature(func)
-    #             parameters = list(signature.parameters.values())
-    #             if len(parameters) > 1:
-    #                 parameter = parameters[number_of_parameters]   # 0 is self
-    #                 parameter_type = parameter.annotation.__name__   # Fixme: case type alias ???
-    #         except AttributeError:
-    #             pass
-    #     # print(f'Debug: "{command}" | "{right_word}" | {number_of_parameters} | {parameter_type}')
+    def get_completions(
+            self,
+            document: Document,
+            complete_event: CompleteEvent,
+    ) -> Iterable[Completion]:
+        line = document.current_line.lstrip()
+        # remove multiple spaces
+        line = re.sub(' +', ' ', line)
+        number_of_parameters = line.count(' ')
+        command = None
+        right_word = None
+        parameter_type = None
+        if number_of_parameters:
+            # words = [_ for _ in line.split(' ') if _]
+            # command = words[0]
+            index = line.rfind(' ')
+            right_word = line[index+1:]
+            index = line.find(' ')
+            command = line[:index]
+            try:
+                func = self._cli._command_map[command]
+                signature = inspect.signature(func)
+                parameters = list(signature.parameters.values())
+                if len(parameters) > 1:
+                    parameter = parameters[number_of_parameters]   # 0 is self
+                    parameter_type = parameter.annotation.__name__   # Fixme: case type alias ???
+            except KeyError:
+                pass
 
-    #     separator = ' '
+        # print(f'Debug: "{command}" | "{right_word}" | {number_of_parameters} | {parameter_type}')
 
-    #     def handle_cd(current_path, path, folder: bool):
-    #         cwd = current_path.find(path)
-    #         if '/' in path:
-    #             nonlocal separator
-    #             separator = '/'
-    #         if folder:
-    #             return cwd.folder_names
-    #         else:
-    #             return cwd.leaf_names
+        separator = ' '
 
-    #     if command is None:
-    #         words = self._commands
-    #     else:
-    #         words = ()
-    #         match parameter_type:
-    #             case 'bool':
-    #                 words = ('true', 'false')
-    #             case 'CommandName':
-    #                 words = self._commands
-    #             case 'FilePath':
-    #                 # match command:
-    #                 #     case 'create' | 'update':
-    #                 cwd = Path().cwd()
-    #                 filenames = sorted(cwd.glob('*.md'))
-    #                 words = [_.name for _ in filenames]
-    #             case 'PagePath':
-    #                 words = handle_cd(self._cli._current_path, right_word, folder=False)
-    #             case 'PageFolder':
-    #                 words = handle_cd(self._cli._current_path, right_word, folder=True)
-    #             case 'AssetFolder':
-    #                 words = handle_cd(self._cli._current_asset_folder, right_word, folder=True)
-    #             case 'Tag':
-    #                 # Fixme: 'list[Tag]' type is list
-    #                 # Fixme: tag can have space !
-    #                 words = [_.tag for _ in self._cli._api.tags()]
-    #     yield from self._get_completions(document, complete_event, words, separator)
+        def handle_path(current_path: Path, folder: bool) -> list[str]:
+            nonlocal separator
+            separator = '/'
+            content = current_path.iterdir()
+            if folder:
+                return [_.name for _ in content if _.is_dir()]
+            else:
+                return [_.name for _ in content if _.is_file()]
+
+        if command is None:
+            words = self._commands
+        else:
+            words = ()
+            match parameter_type:
+                case 'bool':
+                    words = ('true', 'false')
+                case 'CommandName':
+                    words = self._commands
+                case 'DevPath':
+                    # match command:
+                    #     case 'create' | 'update':
+                    words = sorted([
+                        str(_)
+                        for _ in cp.DEV.iterdir()
+                        if _.name.startswith('sd') and not _.name[-1].isnumeric()
+                    ])
+                case 'DirectoryPath':
+                    path = None
+                    if right_word == '/':
+                        path = cp.ROOT
+                    elif right_word.endswith('/'):
+                        path = Path(right_word)
+                    elif right_word:
+                        path = Path(right_word).parent
+                    if path is not None and path.exists():
+                        words = handle_path(path, folder=True)
+        yield from self._get_completions(document, complete_event, words, separator)
 
 ####################################################################################################
 
@@ -233,8 +242,8 @@ class Cli:
         for _ in CommandGroup.SUBCLASSES:
             self._lookup_commands(_)
         self._commands = sorted(self._command_map.keys())
-        self._completer = WordCompleter(self._commands)
-        # self._completer = CustomCompleter(self, self.COMMANDS)
+        # self._completer = WordCompleter(self._commands)
+        self._completer = CustomCompleter(self, self._commands)
 
     ##############################################
 
