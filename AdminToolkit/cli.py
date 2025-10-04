@@ -309,6 +309,8 @@ class Cli:
                 self.print(f"<red>Aborded</red> {e}")
             except ValueError as e:
                 self.print(f"<red>{e}</red>")
+            except KeyboardInterrupt:
+                self.print(f"<red>Interrupted</red>")
             except Exception as e:
                 print(traceback.format_exc())
                 print(e)

@@ -11,6 +11,7 @@ __all__ = ['Node', 'Directory', 'File', 'Walker']
 ####################################################################################################
 
 from pathlib import Path
+from pprint import pprint
 from typing import Iterator
 import os
 
@@ -28,7 +29,12 @@ class Node:
     def __init__(self, path: Path, root: bool = False) -> None:
         self._path = Path(path)
         if not root:
-            parent = Node._MAP[self.to_hash(self._path.parent)]
+            try:
+                parent = Node._MAP[self.to_hash(self._path.parent)]
+            except KeyError as e:
+                print(f"KeyError for {self._path.parent}")
+                pprint(Node._MAP)
+                raise e
             parent.add_child(self)
 
     ##############################################

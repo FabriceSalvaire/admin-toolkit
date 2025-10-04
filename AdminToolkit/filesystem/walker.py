@@ -12,6 +12,8 @@ from typing import AnyStr, List
 # import os
 # from os import PathLike
 
+from AdminToolkit.printer import atprint
+
 ####################################################################################################
 
 class WalkerAbc:
@@ -23,6 +25,8 @@ class WalkerAbc:
     def __init__(self, path: AnyStr | Path) -> None:
         # Make the path absolute, resolving any symlinks.
         self._path = Path(path).expanduser().resolve()
+        if Path(path) != self._path:
+            atprint(f"Resolved to {self._path}")
         if not self._path.exists():
             raise ValueError(f"Path {path} doesn't exists")
 
