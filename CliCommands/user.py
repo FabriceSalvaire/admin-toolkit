@@ -6,13 +6,17 @@
 #
 ####################################################################################################
 
-# __all__ = [
-#     'Devices',
-# ]
+__all__ = ['User']
 
 ####################################################################################################
 
-from .backup import Backup
-from .devices import Devices
-from .filesystem import Filesystem
-from .system import SystemCommands
+from AdminToolkit.cli import CommandGroup
+
+####################################################################################################
+
+class User(CommandGroup):
+
+    ##############################################
+
+    def foo(self):
+        pass

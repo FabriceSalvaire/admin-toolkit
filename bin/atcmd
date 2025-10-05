@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 ####################################################################################################
 #
 # AdminToolkit — ...
@@ -6,13 +8,5 @@
 #
 ####################################################################################################
 
-# __all__ = [
-#     'Devices',
-# ]
-
-####################################################################################################
-
-from .backup import Backup
-from .devices import Devices
-from .filesystem import Filesystem
-from .system import SystemCommands
+from AdminToolkit.scripts.run import main
+main()

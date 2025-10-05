@@ -44,7 +44,7 @@ class System:
         self.os_version = None
         if cp.SYSTEM_RELEASE_CPE.exists():
             data = cp.SYSTEM_RELEASE_CPE.read_text()
-            parts = data.split(':')
+            parts = data.strip().split(':')
             # cpe:/o:fedoraproject:fedora:42
             if parts[1] != '/o':
                 raise ValueError

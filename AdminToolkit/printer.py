@@ -93,12 +93,12 @@ def default_print(message: str) -> None:
 ####################################################################################################
 
 def pt_print(message: str) -> None:
-    if message:
-        message = HTML(message)
-        print_formatted_text(
-            message,
-            style=STYLE,
-        )
+    # if message:
+    message = HTML(message)
+    print_formatted_text(
+        message,
+        style=STYLE,
+    )
 
 ####################################################################################################
 

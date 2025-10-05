@@ -101,8 +101,8 @@ class RsyncBackup:
             #   --owner
             #   --devices
             #   --specials
-            '--hard-links',
-            '--xattrs',
+            # win! '--hard-links',
+            # win! '--xattrs',
             # --acls
             # --atimes
             # --crtimes

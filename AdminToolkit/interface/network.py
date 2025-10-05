@@ -74,6 +74,14 @@ class Interface:
         return self._data.ifname
 
     @property
+    def is_down(self) -> bool:
+        return 'DOWN' in self._data.operstate
+
+    @property
+    def is_unknown(self) -> bool:
+        return 'UNKNOWN' in self._data.operstate
+
+    @property
     def is_up(self) -> bool:
         return 'UP' in self._data.operstate
 

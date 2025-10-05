@@ -350,9 +350,11 @@ class Cli:
 
     ##############################################
 
-    def start(self, query: str = '') -> None:
+    def start(self, query: str = '', run_and_exit: bool = True) -> None:
         if query:
-            if not self.run(query):
+            self.print()
+            rc = self._process_query(query)
+            if run_and_exit or not rc:
                 return
 
         history = FileHistory(self.CLI_HISTORY)
