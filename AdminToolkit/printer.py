@@ -6,11 +6,15 @@
 #
 ####################################################################################################
 
-__all__ = ['atprint', 'default_print']
+__all__ = ['atprint', 'default_print', 'pt_print', 'STYLE', 'remove_style']
 
 ####################################################################################################
 
 from enum import Enum
+
+from prompt_toolkit import HTML
+from prompt_toolkit import print_formatted_text
+from prompt_toolkit.styles import Style
 
 ####################################################################################################
 
@@ -50,6 +54,26 @@ class Palette(Enum):
 
 ####################################################################################################
 
+STYLE = Style.from_dict({
+    # User input (default text)
+    # '': '#000000',
+    '': '#ffffff',
+    # Prompt
+    'prompt': '#ff0000',
+    # Output
+    # 'red': '#ff0000',
+    # 'green': '#00ff00',
+    # 'blue': '#0000ff',
+    'red': '#ed1414',
+    'green': '#10cf15',
+    'blue': '#1b99f3',
+    'orange': '#f57300',
+    'violet': '#9b58b5',
+    'greenblue': '#19bb9c',
+})
+
+####################################################################################################
+
 # def default_print(*args, **kwargs):
 def default_print(message: str) -> None:
     patterns = [
@@ -68,4 +92,31 @@ def default_print(message: str) -> None:
 
 ####################################################################################################
 
-atprint = default_print
+def pt_print(message: str) -> None:
+    if message:
+        message = HTML(message)
+        print_formatted_text(
+            message,
+            style=STYLE,
+        )
+
+####################################################################################################
+
+def remove_style(message: str) -> None:
+    new_message = ''
+    in_style = False
+    for c in message:
+        if in_style:
+            if c == '>':
+                in_style = False
+        else:
+            if c == '<':
+                in_style = True
+            else:
+                new_message += c
+    return new_message
+
+####################################################################################################
+
+# atprint = default_print
+atprint = pt_print

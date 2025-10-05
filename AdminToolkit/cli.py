@@ -30,12 +30,12 @@ from prompt_toolkit.document import Document
 # from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.history import FileHistory
 # from prompt_toolkit.shortcuts import ProgressBar
-from prompt_toolkit.styles import Style
 
 from AdminToolkit.cache import CliCache
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.danger import AbortAction
 from AdminToolkit.interface.user import RootPermissionRequired
+from AdminToolkit.printer import atprint, STYLE, remove_style
 from AdminToolkit.tools.format import byte_humanize
 
 ####################################################################################################
@@ -163,7 +163,7 @@ class CustomCompleter(Completer):
                 func = self._cli._command_map[command]
                 signature = inspect.signature(func)
                 parameters = list(signature.parameters.values())
-                if len(parameters) > 1:
+                if len(parameters) > 1 and number_of_parameters < len(parameters):
                     parameter = parameters[number_of_parameters]   # 0 is self
                     parameter_type = parameter.annotation.__name__   # Fixme: case type alias ???
             except KeyError:
@@ -219,28 +219,11 @@ class Cli:
 
     CLI_HISTORY = Path('cli_history')
     HISTORY_JSON = 'history.json'
-
-    STYLE = Style.from_dict({
-        # User input (default text)
-        # '': '#000000',
-        '': '#ffffff',
-        # Prompt
-        'prompt': '#ff0000',
-        # Output
-        # 'red': '#ff0000',
-        # 'green': '#00ff00',
-        # 'blue': '#0000ff',
-        'red': '#ed1414',
-        'green': '#10cf15',
-        'blue': '#1b99f3',
-        'orange': '#f57300',
-        'violet': '#9b58b5',
-        'greenblue': '#19bb9c',
-    })
-
+ 
     ##############################################
 
     def __init__(self, commands_path) -> None:
+        self._capture_buffer = None
         self._modules = {}
         self._import_commands(commands_path)
         self._command_map = {}
@@ -306,6 +289,23 @@ class Cli:
             query = query.replace('<', '...')
             self._print_invalid_command(query)
             return True
+
+        target = None
+        target_mode = None
+        i = query.rfind('>')
+        if i != -1:
+            target = Path(query[i+1:].strip())
+            self._capture_buffer = ''
+            if query[i-1] == '>':
+                i -= 1
+                target_mode = 'a'
+            else:
+                target_mode = 'w'
+            query = query[:i].strip()
+            if '>' in query:
+                self._print_invalid_command(query)
+                return True
+
         # try:
         command, *argument = query.split()
         # except ValueError:
@@ -333,6 +333,10 @@ class Cli:
         except KeyError:
             self.print(f"<red>Invalid command</red> <blue>{query}</blue>")
             self.usage()
+        if self._capture_buffer is not None:
+            with open(target, target_mode) as _:
+                _.write(self._capture_buffer)
+            self._capture_buffer = None
         return True
 
     ##############################################
@@ -364,7 +368,7 @@ class Cli:
                 ]
                 query = session.prompt(
                     message,
-                    style=self.STYLE,
+                    style=STYLE,
                 )
             except KeyboardInterrupt:
                 continue
@@ -380,12 +384,10 @@ class Cli:
     ##############################################
 
     def print(self, message: str = '') -> None:
-        if message:
-            message = HTML(message)
-        print_formatted_text(
-            message,
-            style=self.STYLE,
-        )
+        if self._capture_buffer is not None:
+            self._capture_buffer += remove_style(message) + LINESEP
+        else:
+            atprint(message)
 
     ##############################################
 
