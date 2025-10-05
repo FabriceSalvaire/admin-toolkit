@@ -10,20 +10,20 @@ __all__ = ['main']
 
 ####################################################################################################
 
-from pathlib import Path
 import sys
-
-from AdminToolkit.cli import Cli
-
-####################################################################################################
-
-# Fixme:
-SOURCE = Path(__file__).parents[2]
-COMMANDS_PATH = SOURCE.joinpath('CliCommands')
-# print(f'commands: {COMMANDS_PATH}')
 
 ####################################################################################################
 
 def main() -> None:
-    cli = Cli(COMMANDS_PATH)
-    cli.start(' '.join(sys.argv[1:]))
+    query = ' '.join(sys.argv[1:])
+    if query:
+        from pathlib import Path
+        from AdminToolkit.cli import Cli
+
+        # Fixme:
+        SOURCE = Path(__file__).parents[2]
+        COMMANDS_PATH = SOURCE.joinpath('CliCommands')
+        # print(f'commands: {COMMANDS_PATH}')
+
+        cli = Cli(COMMANDS_PATH)
+        cli.start(query)
