@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# — ...
+# AdminToolkit — ...
 # Copyright (C) 2025 Fabrice SALVAIRE
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
@@ -62,12 +62,12 @@ else:
 
 setup_dict = dict(
     name='AdminToolkit',
-    version='0.1',   # ImageBrowser.__version__,
+    version=AdminToolkit.__version__,
     author='Fabrice Salvaire',
     author_email='fabrice.salvaire@orange.fr',
-    description='...',
+    description='An Admin Toolkit',
     license='GPLv3',
-    keywords= '...',
+    keywords='system, administration, toolkit',
     url='https://github.com/FabriceSalvaire/admin-toolkit',
     long_description=long_description,
 )
