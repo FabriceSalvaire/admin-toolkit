@@ -3,6 +3,8 @@
 __pycache__
 .pycache
 
+__TRASH__/
+
 cli_history
 
 doc/sphinx/build/
