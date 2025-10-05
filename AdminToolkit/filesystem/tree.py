@@ -14,6 +14,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Iterator
 import os
+import sys
 
 from .walker import WalkerAbc
 
@@ -23,6 +24,12 @@ class Node:
 
     _MAP = {}
     __slots__ = ('_path')
+
+    ##############################################
+
+    @classmethod
+    def reset(cls) -> None:
+        cls._MAP = {}
 
     ##############################################
 
@@ -36,6 +43,14 @@ class Node:
                 pprint(Node._MAP)
                 raise e
             parent.add_child(self)
+        if root:
+            self.reset()
+
+    ##############################################
+
+    @property
+    def memory_size(self) -> int:
+        return sum(map(sys.getsizeof, self._MAP.values()))
 
     ##############################################
 

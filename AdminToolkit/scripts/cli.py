@@ -19,7 +19,7 @@ from AdminToolkit.cli import Cli
 # Fixme:
 SOURCE = Path(__file__).parents[2]
 COMMANDS_PATH = SOURCE.joinpath('CliCommands')
-print(f'commands: {COMMANDS_PATH}')
+# print(f'commands: {COMMANDS_PATH}')
 
 ####################################################################################################
 

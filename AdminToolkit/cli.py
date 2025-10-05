@@ -32,9 +32,11 @@ from prompt_toolkit.history import FileHistory
 # from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.styles import Style
 
+from AdminToolkit.cache import CliCache
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.danger import AbortAction
 from AdminToolkit.interface.user import RootPermissionRequired
+from AdminToolkit.tools.format import byte_humanize
 
 ####################################################################################################
 
@@ -42,11 +44,14 @@ from AdminToolkit.interface.user import RootPermissionRequired
 
 LINESEP = os.linesep
 
+####################################################################################################
+
 type CommandName = str
 type DevPath = str
 type DirectoryPath = str
 type FilePath = str
 type AnyPath = str
+type CacheName = str
 
 ####################################################################################################
 
@@ -73,9 +78,8 @@ class CustomCompleter(Completer):
 
     ##############################################
 
-    def __init__(self, cli, commands: list[str]) -> None:
+    def __init__(self, cli) -> None:
         self._cli = cli
-        self._commands = commands
 
         self.ignore_case = True
         # self.display_dict = display_dict or {}
@@ -176,17 +180,19 @@ class CustomCompleter(Completer):
             if folder:
                 return [_.name for _ in content if _.is_dir()]
             else:
-                return [_.name for _ in content if _.is_file()]
+                return [_.name for _ in content]    # if _.is_file()
 
         if command is None:
-            words = self._commands
+            words = self._cli._commands
         else:
             words = ()
             match parameter_type:
                 case 'bool':
                     words = ('true', 'false')
+                case 'CacheName':
+                    words = self._cli._cache.names
                 case 'CommandName':
-                    words = self._commands
+                    words = self._cli._commands
                 case 'DevPath':
                     # match command:
                     #     case 'create' | 'update':
@@ -195,7 +201,7 @@ class CustomCompleter(Completer):
                         for _ in cp.DEV.iterdir()
                         if _.name.startswith('sd') and not _.name[-1].isnumeric()
                     ])
-                case 'DirectoryPath':
+                case 'DirectoryPath' | 'FilePath':
                     path = None
                     if right_word == '/':
                         path = cp.ROOT
@@ -204,7 +210,7 @@ class CustomCompleter(Completer):
                     elif right_word:
                         path = Path(right_word).parent
                     if path is not None and path.exists():
-                        words = handle_path(path, folder=True)
+                        words = handle_path(path, folder=parameter_type == 'DirectoryPath')
         yield from self._get_completions(document, complete_event, words, separator)
 
 ####################################################################################################
@@ -243,13 +249,23 @@ class Cli:
             self._lookup_commands(_)
         self._commands = sorted(self._command_map.keys())
         # self._completer = WordCompleter(self._commands)
-        self._completer = CustomCompleter(self, self._commands)
+        self._completer = CustomCompleter(self)
+        self._cache = CliCache()
+
+    ##############################################
+
+    @property
+    def cache(self) -> CliCache:
+        return self._cache
 
     ##############################################
 
     def _import_commands(self, path: Path):
+        self.print(f"Load <green>{path}</green>")
         name = path.name
-        spec = importlib.util.spec_from_file_location(name, path.joinpath('__init__.py'))
+        if path.is_dir():
+            path = path.joinpath('__init__.py')
+        spec = importlib.util.spec_from_file_location(name, path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self._modules[name] = module
@@ -424,6 +440,49 @@ class Cli:
                 else:
                     default = ''
                 self.print(f'  <blue>{_.name}</blue>: <green>{_.annotation.__name__}</green>{default}')
+
+    ##############################################
+
+    def load_module(self, path: FilePath) -> None:
+        path = Path(path)
+        actual = set(CommandGroup.SUBCLASSES)
+        self._import_commands(path)
+        new = set(CommandGroup.SUBCLASSES) - actual
+        for _ in new:
+            self._lookup_commands(_)
+        self._commands = sorted(self._command_map.keys())
+
+    ##############################################
+
+    def list_cache(self) -> None:
+        for name, value in self._cache:
+            type_ = str(type(value)).replace("<class '", '').replace("'>", '')
+            # print(type_)
+            # memory_size = ''
+            # if hasattr(value, 'memory_size'):
+            #     memory_size = byte_humanize(value.memory_size)
+            # self.print(f"  <blue>{name}</blue>   {type_}   {memory_size}")
+            self.print(f"  <blue>{name}</blue>   {type_}")
+
+    def print_cache(self, name: CacheName) -> None:
+        _ = self._cache.get(name)
+        pprint(_)
+
+    def save_cache(self, name: CacheName, path: FilePath) -> None:
+        self._cache.save(name, path)
+        self.print(f"Saved <blue>{name}</blue> to <green>{path}</green>")
+
+    def load_cache(self, name: CacheName, path: FilePath) -> None:
+        self._cache.load(name, path)
+        self.print(f"Loaded <blue>{name}</blue> from <green>{path}</green>")
+
+    def reset_cache(self, name: CacheName) -> None:
+        self._cache.store(name)
+        self.print(f"Reseted <blue>{name}</blue>")
+
+    def delete_cache(self, name: CacheName) -> None:
+        self._cache.delete(name)
+        self.print(f"Deleted <blue>{name}</blue>")
 
 ####################################################################################################
 

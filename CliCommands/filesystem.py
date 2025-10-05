@@ -14,15 +14,13 @@ from pathlib import Path
 from pprint import pprint
 import math
 
-from AdminToolkit.cli import CommandGroup, DirectoryPath
+from AdminToolkit.cli import CommandGroup, DirectoryPath, FilePath
 from AdminToolkit.config import units
 from AdminToolkit.tools.format import byte_humanize
 
 ####################################################################################################
 
 class Filesystem(CommandGroup):
-
-    root_node = None
 
     ##############################################
 
@@ -48,44 +46,55 @@ class Filesystem(CommandGroup):
         root_node.update_size_accumulator()
         self.print('done')
 
-        Filesystem.root_node = root_node
+        self._cache.store('root_node', root_node)
 
     ##############################################
 
+    def du_save(self, path: FilePath) -> None:
+        self.save_cache('root_node', path)
+
+    def du_load(self, path: FilePath) -> None:
+        self.load_cache('root_node', path)
+
     def du_reset(self) -> None:
-        self.root_node = None
+        self.cache.reset_cache('root_node')
 
     ##############################################
 
     def du_exam(self, depth_max: int, size_min: str = 'GB') -> None:
         from AdminToolkit.filesystem.tree import Directory
 
-        if Filesystem.root_node is None:
+        root_node = self._cache.get('root_node')
+        if root_node is None:
             return
-        root_node = Filesystem.root_node
 
         depth_max = int(depth_max)
 
         for i, c in enumerate(size_min):
             if not c.isnumeric():
                 break
+        _size_min = size_min[:i]
         unit = size_min[i:]
-        size_min = size_min[:i]
-        if size_min:
-            size_min = float(size_min)
+        print(_size_min, unit)
+        if _size_min:
+            _size_min = float(_size_min)
         match unit:
-            case 'KB':
+            case 'kB':
                 unit = units.KB
             case 'MB':
                 unit = units.MB
             case 'GB':
                 unit = units.GB
-        size_min *= unit
+            case '':
+                unit = 1
+            case _:
+                raise ValueError(f"Invalid unit {size_min}")
+        _size_min *= unit
 
-        # print(depth_max, size_min)
+        # print(depth_max, _size_min)
 
         def show(node, depth):
-            if depth <= depth_max and node.size_accumulator >= size_min:
+            if depth <= depth_max and node.size_accumulator >= _size_min:
                 # self.print(' '*4*depth + f"{node.path.name} {size}")
                 left = ' '*4*depth + node.path.name
                 size = byte_humanize(node.size_accumulator)
