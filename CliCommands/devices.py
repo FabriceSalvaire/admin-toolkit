@@ -145,14 +145,24 @@ class Devices(CommandGroup):
     def df(self) -> None:
         from AdminToolkit.interface.disk.df import df
         df_infos = df()
-        self.print(f'{"":30} {"Size":>8} {"Used":>8} {"Free":>8}')
+        self.print(f'{"":30} {"Size":>8} {"Used":>8} {"Free":>8} {"Freal":>8} {"f/r":>4} {"used":>4}')
         for d in sorted(df_infos, key=lambda _: str(_.mountpoint)):
             mountpoint = str(d.mountpoint)
-            free = d.hfree
-            if free.endswith('MB') or free.endswith('KB'):
-                self.print(f'<red>{mountpoint:30}</red> {d.hsize:>8} {d.hused:>8} <red>{free:>8}</red> {d.pused:>3}%   {d.dev}')
+            if d.free != 0:
+                free = d.hfree
             else:
-                self.print(f'<green>{mountpoint:30}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {d.pused:>3}%   {d.dev}')
+                free = str(d.free) + 'KB'
+            real_free = d.hfree_real
+            ratio = f'{d.free_real_ratio}%'
+            pused_real = f'{d.pused_real}%'
+            if real_free == free:
+                real_free = ''
+                ratio = ''
+                pused_real = ''
+            if free.endswith('MB') or free.endswith('KB'):
+                self.print(f'<red>{mountpoint:30}</red> {d.hsize:>8} {d.hused:>8} <red>{free:>8}</red> {real_free:>8} {ratio:>4} {d.pused:>3}% {pused_real:>4}  {d.dev}')
+            else:
+                self.print(f'<green>{mountpoint:30}</green> {d.hsize:>8} {d.hused:>8} {free:>8} {real_free:>8} {ratio:>4} {d.pused:>3}% {pused_real:>4}  {d.dev}')
 
     ##############################################
 

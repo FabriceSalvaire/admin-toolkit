@@ -11,6 +11,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint
+import math
 
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.tools.format import byte_humanize
@@ -48,6 +49,22 @@ class DfInfo:
     def hfree(self) -> str:
         return byte_humanize(self.free)
 
+    @property
+    def free_real(self) -> str:
+        return self.size - self.used
+
+    @property
+    def hfree_real(self) -> str:
+        return byte_humanize(self.free_real)
+
+    @property
+    def free_real_ratio(self) -> int:
+        return math.ceil(self.free / self.free_real * 100)
+
+    @property
+    def pused_real(self) -> int:
+        return math.ceil(self.used / self.size * 100)
+
 ####################################################################################################
 
 def df() -> list:
@@ -69,8 +86,9 @@ def df() -> list:
         parts = df_info.mountpoint.parts
         if (df_info.mountpoint == cp.ROOT
             or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
-            if len(parts) > 2 and parts[1] == 'run' and parts[2] != 'media':
-                continue
+            if len(parts) >= 2 and parts[1] == 'run':
+                if not (len(parts) >= 3 and parts[2] == 'media'):
+                    continue
             df_infos.append(df_info)
     return df_infos
 

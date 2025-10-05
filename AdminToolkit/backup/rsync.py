@@ -91,7 +91,21 @@ class RsyncBackup:
         self._check_path()
         cmd = [
             RSYNC,
-            '--archive',   # -rlptgoD
+            '--archive',
+            #   same as -rlptgoD (no -A,-X,-U,-N,-H)
+            #   --recursive
+            #   --links
+            #   --perms
+            #   --times
+            #   --group
+            #   --owner
+            #   --devices
+            #   --specials
+            '--hard-links',
+            '--xattrs',
+            # --acls
+            # --atimes
+            # --crtimes
             '--verbose',
             '--delete',
             '--ignore-errors',
