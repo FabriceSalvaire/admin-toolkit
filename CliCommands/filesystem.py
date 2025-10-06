@@ -109,7 +109,7 @@ class Filesystem(CommandGroup):
                 # Fixme: strip large name
                 name = node.path.name
                 if len(name) > 16:
-                    name = name[:16]ifco
+                    name = name[:16]
                 left = ' '*4*depth + name
                 if colour:
                     _ = '.'*(L - len(left))

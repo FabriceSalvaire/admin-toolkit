@@ -10,19 +10,11 @@ __all__ = ['main']
 
 ####################################################################################################
 
-from pathlib import Path
-
 from AdminToolkit.cli import Cli
-
-####################################################################################################
-
-# Fixme:
-SOURCE = Path(__file__).parents[2]
-COMMANDS_PATH = SOURCE.joinpath('CliCommands')
-# print(f'commands: {COMMANDS_PATH}')
+from AdminToolkit.config import config
 
 ####################################################################################################
 
 def main() -> None:
-    cli = Cli(COMMANDS_PATH)
+    cli = Cli(config.CLI_COMMANDS_PATH)
     cli.start()

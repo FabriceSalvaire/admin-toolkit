@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-__all__ = ['get_mount_points', 'get_root_device']
+__all__ = ['get_mount_points', 'proc_mount', 'get_root_device', 'mount', 'is_mounted', 'umount']
 
 ####################################################################################################
 
@@ -45,20 +45,20 @@ def get_mount_points() -> list:
 ####################################################################################################
 
 def mount(
-        device_path: Path | str,
-        mountpoint: Path | str,
-        make: bool = False,
-        ro: bool = False,
+    device_path: Path | str,
+    mountpoint: Path | str,
+    make: bool = False,
+    ro: bool = False,
 ) -> list:
     device_path = Path(device_path)
     mountpoint = Path(mountpoint)
     if not device_path.exists():
-        atprint(f"Device {device_path} doesn't exists")
+        raise NameError(f"Device {device_path} doesn't exists")
     if not mountpoint.exists():
         if make:
             mountpoint.mkdir(parents=True)
         else:
-            atprint(f"Mountpoint {device_path} doesn't exists")
+            raise NameError(f"Mountpoint {device_path} doesn't exists")
     cmd = [
         cp.MOUNT,
     ]
@@ -67,6 +67,36 @@ def mount(
     cmd += [
         str(device_path),
         str(mountpoint),
+    ]
+    run_command(cmd)
+
+####################################################################################################
+
+def is_mounted(device_path: Path | str, mountpoint: Path | str,) -> bool:
+    sd_path = Path(device_path).resolve()
+    mountpoint = Path(mountpoint)
+    for mount_info in proc_mount():
+        if mount_info.dev == sd_path and mount_info.mountpoint == mountpoint:
+            return True
+    return False
+
+####################################################################################################
+
+def umount(
+    device_path: Path | str = None,
+    mountpoint: Path | str = None,
+):
+    if device_path is None and mountpoint is None:
+        raise ValueError("require a device_path or mountpoint")
+    if device_path is not None:
+        path = Path(device_path)
+    else:
+        path = Path(mountpoint)
+    if not path.exists():
+        raise NameError(f"Path {path} doesn't exists")
+    cmd = [
+        cp.UMOUNT,
+        str(path),
     ]
     run_command(cmd)
 

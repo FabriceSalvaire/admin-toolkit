@@ -17,13 +17,8 @@ import sys
 def main() -> None:
     query = ' '.join(sys.argv[1:])
     if query:
-        from pathlib import Path
         from AdminToolkit.cli import Cli
+        from AdminToolkit.config import config
 
-        # Fixme:
-        SOURCE = Path(__file__).parents[2]
-        COMMANDS_PATH = SOURCE.joinpath('CliCommands')
-        # print(f'commands: {COMMANDS_PATH}')
-
-        cli = Cli(COMMANDS_PATH)
+        cli = Cli(config.CLI_COMMANDS_PATH)
         cli.start(query)

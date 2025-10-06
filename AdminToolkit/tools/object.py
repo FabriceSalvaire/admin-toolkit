@@ -16,8 +16,10 @@ __all__ = [
 ####################################################################################################
 
 from collections import namedtuple
+from typing import Any
 from pprint import pprint
 import json
+import uuid
 
 ####################################################################################################
 
@@ -115,7 +117,10 @@ def to_namedtuple(cls: str, data: dict):
     # Fixme: check fields
     if cls not in _NAMEDTUPLE_CACHE:
         fields = sorted(data.keys())
+        # print(f"new cls {cls} {fields}")
         _NAMEDTUPLE_CACHE[cls] = namedtuple(cls, fields)
+    # else:
+    #     print(f"cached cls {cls}")
     return _NAMEDTUPLE_CACHE[cls](**data)
 
 ####################################################################################################
@@ -126,6 +131,14 @@ def namedtuple_factory(cls_name: str, fields: [str]):
         fields,
         defaults=[None]*len(fields),
     )
+
+####################################################################################################
+
+def objectify(name: str, data: dict) -> Any:
+    suffix = str(uuid.uuid1()).replace('-', '')[:10]
+    name = f'{name}_{suffix}'
+    obj = to_namedtuple(name, data)
+    return obj
 
 ####################################################################################################
 

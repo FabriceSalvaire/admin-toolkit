@@ -329,7 +329,7 @@ class Cli:
                 self.print(f"<red>Interrupted</red>")
             except Exception as e:
                 print(traceback.format_exc())
-                print(e)
+                self.print(e)
         except KeyError:
             self.print(f"<red>Invalid command</red> <blue>{query}</blue>")
             self.usage()
