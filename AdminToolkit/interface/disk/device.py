@@ -19,17 +19,18 @@ __all__ = ['BlockDevice']
 
 ####################################################################################################
 
+from enum import IntEnum, auto
 from pathlib import Path
 # from pprint import pprint
 from typing import Iterator
 
 from AdminToolkit.config import common_path as cp
+from AdminToolkit.interface.disk.partition import parted
+from AdminToolkit.interface.disk.tool import to_dev_path, is_sd
 from AdminToolkit.interface.user import RootPermissionRequired
 from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.object import namedtuple_factory
 from AdminToolkit.tools.subprocess import run_command
-from .partition import parted
-from .tool import to_dev_path, is_sd
 
 ####################################################################################################
 
@@ -136,7 +137,79 @@ def lsblk(dev_path: str | Path) -> dict:
 
 ####################################################################################################
 
-class BlockDevice:
+class DeviceType(IntEnum):
+    SCSI_DEVICE = auto()
+    SCSI_PARTITION = auto()
+    LVM_LOGIC_VOLUME = auto()
+    DMRAID_VOLUME = auto()
+
+####################################################################################################
+
+class DeviceAbc:
+
+    ##############################################
+
+    @classmethod
+    def split_lvm(cls, dev_path: Path | str) -> [str, str]:
+        _ = str(dev_path)
+        if _.startswith('/dev/mapper/'):
+            name = dev_path.name
+            sep = None
+            for i in range(1, len(name)):
+                if name[i] == '-' and name[i+1] != '-' and name[i-1] != '-':
+                    sep = i
+            if sep is not None:
+                vg_name = name[:sep]
+                lv_name = name[sep+1:]
+                return vg_name, lv_name
+        return None
+
+    ##############################################
+
+    @classmethod
+    def dev_path_type(cls, dev_path: Path | str) -> DeviceType:
+        dev_path = Path(dev_path)
+        if not dev_path.exists():
+            raise ValueError(f"Device path {dev_path} doesn't exists")
+        _ = str(dev_path)
+        if _.startswith('/dev/sd'):
+            if dev_path.name[-1].isnumeric():
+                return DeviceType.SCSI_PARTITION
+            else:
+                return DeviceType.SCSI_DEVICE
+        elif _.startswith('/dev/dm'):
+            if dev_path.name.startswith('dm-'):
+                return DeviceType.LVM_LOGIC_VOLUME
+            else:
+                return DeviceType.DMRAID_VOLUME
+        elif _.startswith('/dev/mapper/'):
+            if cls.split_lvm(dev_path) is not None:
+                return DeviceType.LVM_LOGIC_VOLUME
+        elif dev_path.is_simlink():
+            target = dev_path.resolve()
+            if str(target).startswith('/dev/dm-'):
+                return DeviceType.LVM_LOGIC_VOLUME
+        return None
+
+   ##############################################
+
+    @property
+    def links(self) -> Iterator[str]:
+        return iter(self._links)
+
+   ##############################################
+
+    def filtered_links(self, by: str = '', name: str = '') -> Iterator[str]:
+        for _ in self._links:
+            if by and f'by-{by}' != _.parts[3]:
+                continue
+            if name and name not in _.name:
+                continue
+            yield _
+
+####################################################################################################
+
+class BlockDevice(DeviceAbc):
 
     ##############################################
 
@@ -168,15 +241,15 @@ class BlockDevice:
     ##############################################
 
     def __init__(self, dev_path: str | Path) -> None:
-        self.dev_path = to_dev_path(dev_path)
+        self._dev_path = to_dev_path(dev_path)
         # Fixme: can return None
         self._lsblk = lsblk(self.dev_path)
         self._read_gpt_table()
         # if self._lsblk is not None:
-        self.partitions = [Partition(self, _) for _ in self._lsblk.children]
+        self._partitions = [Partition(self, _) for _ in self._lsblk.children]
         # else:
         #     self.partitions = None
-        self.links = self.dev_links(self.name)
+        self._links = self.dev_links(self.name)
 
     ##############################################
 
@@ -201,6 +274,10 @@ class BlockDevice:
             self._gpt_partitions = None
 
     ##############################################
+
+    @property
+    def dev_path(self) -> Path:
+        return self._dev_path
 
     @property
     def name(self) -> bool:
@@ -258,14 +335,20 @@ class BlockDevice:
     def sector_to_byte(self, value: int) -> int:
         return value * self.sector_size
 
+    ##############################################
+
+    @property
+    def partitions(self) -> Iterator['Partition']:
+        return iter(self._partitions)
+
 ####################################################################################################
 
-class Partition:
+class Partition(DeviceAbc):
 
     ##############################################
 
     def __init__(self, device: BlockDevice, lsblk: dict) -> None:
-        self.device = device
+        self._device = device
         self._lsblk = lsblk
         # self.id == self.part_number
         if device._gpt_partitions is not None:
@@ -273,9 +356,13 @@ class Partition:
         else:
             # Fixme: raise ...
             self._gpt = None
-        self.links = BlockDevice.dev_links(self.name)
+        self._links = BlockDevice.dev_links(self.name)
 
     ##############################################
+
+    @property
+    def device(self) -> BlockDevice:
+        return self._device
 
     @property
     def name(self) -> int:
@@ -396,3 +483,17 @@ class Partition:
     @property
     def gpt_flags(self) -> [str]:
         return self._gpt.flags
+
+
+####################################################################################################
+
+if __name__ == '__main__':
+    devices = BlockDevice.devices()
+    for device in devices:
+        print(device.name)
+        for link in device.links:
+            print(' '*4, link)
+        for partition in device.partitions:
+            print(' '*2, partition.name)
+            for link in partition.filtered_links(by='id', name='usb'):
+                print(' '*4, link)

@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-__all__ = ['mount', 'get_root_device']
+__all__ = ['get_mount_points', 'get_root_device']
 
 ####################################################################################################
 
@@ -16,12 +16,13 @@ from pprint import pprint
 
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
+from AdminToolkit.printer import atprint
 from AdminToolkit.tools.object import split_line
 from AdminToolkit.tools.subprocess import run_command, iter_on_command_output
 
 ####################################################################################################
 
-def mount() -> list:
+def get_mount_points() -> list:
     MountInfo = namedtuple('MountInfo', ('dev', 'mountpoint', 'type', 'options'))
     cmd = (
         cp.MOUNT,
@@ -40,6 +41,34 @@ def mount() -> list:
             mountinfo = MountInfo(*_)
             mount_points.append(mountinfo)
     return mount_points
+
+####################################################################################################
+
+def mount(
+        device_path: Path | str,
+        mountpoint: Path | str,
+        make: bool = False,
+        ro: bool = False,
+) -> list:
+    device_path = Path(device_path)
+    mountpoint = Path(mountpoint)
+    if not device_path.exists():
+        atprint(f"Device {device_path} doesn't exists")
+    if not mountpoint.exists():
+        if make:
+            mountpoint.mkdir(parents=True)
+        else:
+            atprint(f"Mountpoint {device_path} doesn't exists")
+    cmd = [
+        cp.MOUNT,
+    ]
+    if ro:
+        cmd.append('--option=ro')
+    cmd += [
+        str(device_path),
+        str(mountpoint),
+    ]
+    run_command(cmd)
 
 ####################################################################################################
 
@@ -63,7 +92,7 @@ def proc_mount() -> list:
 ####################################################################################################
 
 def get_root_device() -> str:
-    from .partition import partion_to_device
+    from AdminToolkit.interface.disk.partition import partion_to_device
     ### SECURITY FUNCTION ! ###
     for mount_info in proc_mount():
         # ROOT = Path('/')
@@ -108,7 +137,7 @@ def get_root_device() -> str:
 
 
 if __name__ == '__main__':
-    _ = mount()
+    _ = get_mount_points()
     pprint(_)
 
     print()

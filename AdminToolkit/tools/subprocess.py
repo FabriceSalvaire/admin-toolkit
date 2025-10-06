@@ -12,6 +12,7 @@ __all__ = ['RUN_DANGEROUS', 'run_command', 'iter_on_command_output']
 
 import json
 import subprocess
+import sys
 
 from AdminToolkit.config.config import DEBUG
 from AdminToolkit.printer import atprint
@@ -46,6 +47,8 @@ def run_command(
     cls_map: dict = None,
     to_bytes: bool = False,
     print_output: bool = False,
+    check: bool = True,
+    rc: bool = False,
 ) -> str:
     if DEBUG:
         atprint(f'<red>run_command:</red> {cmd}')
@@ -54,7 +57,7 @@ def run_command(
         stdout = _.stdout
         stderr = _.stderr
     else:
-        process = subprocess.run(cmd, capture_output=True)
+        process = subprocess.run(cmd, capture_output=True, check=check)
         stdout = process.stdout
         stderr = process.stderr
     if print_output or DEBUG:
@@ -72,6 +75,8 @@ def run_command(
         atprint(f'{LRULE} stdout {RRULE}')
         _print(stdout)
         atprint('<blue>' + '-'*50 + '</blue>')
+    if rc:
+        return process.returncode
     if to_bytes:
         return stdout
     if isinstance(stdout, bytes):
