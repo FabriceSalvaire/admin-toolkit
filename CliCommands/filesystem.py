@@ -93,13 +93,38 @@ class Filesystem(CommandGroup):
 
         # print(depth_max, _size_min)
 
+        class Toggle:
+            def __init__(self):
+                self._value = False
+            def __bool__(self):
+                return self._value
+            def toggle(self):
+                self._value = not self._value
+        colour = Toggle()
+
         def show(node, depth):
             if depth <= depth_max and node.size_accumulator >= _size_min:
                 # self.print(' '*4*depth + f"{node.path.name} {size}")
-                left = ' '*4*depth + node.path.name
+                L = 50
+                # Fixme: strip large name
+                name = node.path.name
+                if len(name) > 16:
+                    name = name[:16]ifco
+                left = ' '*4*depth + name
+                if colour:
+                    _ = '.'*(L - len(left))
+                    left = left + _
                 size = byte_humanize(node.size_accumulator)
                 right = '='*math.ceil(50 * node.size_accumulator / root_node.size_accumulator)
-                self.print(f"{left:50}   {size:>10}   {right}")
+                # if colour:
+                #     co = '<green>'
+                #     cp = '</green>'
+                # else:
+                co = ''
+                cp = ''
+                line = f"{co}{left:50} {size:>7}   {right}{cp}"
+                self.print(line)
+                colour.toggle()
 
         root_node.walk(
             callback=show,
