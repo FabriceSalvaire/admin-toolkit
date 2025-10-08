@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-__all__ = ['partion_to_device']
+__all__ = ['partion_to_device', 'parted']
 
 ####################################################################################################
 
@@ -34,9 +34,9 @@ def partion_to_device(name: str) -> str:
     i = len(name) - 1
     while i >= 0 and name[i].isnumeric():
         i -= 1
-    _ = name[:i+1]
-    _ = Path(_).name
-    # print(name, _)
+        _ = name[:i+1]
+        _ = Path(_).name
+        # print(name, _)
     return _
 
 ####################################################################################################
@@ -65,6 +65,25 @@ class GptPartion:
     uuid: str = None
     # for MsDOS
     type_id: str = None
+
+    TYPE_UUID = {
+        '0657fd6d-a4ab-43c4-84e5-0933c84b4f4f': 'Linux Swap partition',
+        '0fc63daf-8483-4772-8e79-3d69d8477de4': 'Linux filesystem data',
+        'c12a7328-f81f-11d2-ba4b-00a0c93ec93b': 'EFI system partition',
+        'de94bba4-06d1-4d40-a16a-bfd50179d6ac': 'Windows Recovery Environment',
+        'e3c9e316-0b5c-4db8-817d-f92df00215ae': 'Microsoft Reserved Partition (MSR)',
+        'e6d6d379-f507-44c2-a23c-238f2a3df928': 'LVM',
+        'ebd0a0a2-b9e5-4433-87c0-68b6b72699c7': 'Windows Basic data partition',
+    }
+
+    ##############################################
+
+    @property
+    def type_uuid_str(self) -> str:
+        if self.type_uuid is not None:
+            return self.TYPE_UUID.get(self.type_uuid.lower(), '???')
+        else:
+            return None
 
 ####################################################################################################
 
@@ -112,8 +131,6 @@ def parted(dev_path: str | Path) -> dict:
     return data
 
 ####################################################################################################
-
-# See http://en.wikipedia.org/wiki/GUID_Partition_Table
 
 GPT_HEADER_FORMAT = '''
 8s  signature

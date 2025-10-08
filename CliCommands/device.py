@@ -1,6 +1,6 @@
 ####################################################################################################
 
-__all__ = ['Devices']
+__all__ = ['Device']
 
 ####################################################################################################
 
@@ -13,7 +13,7 @@ from AdminToolkit.tools.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
 
-class Devices(CommandGroup):
+class Device(CommandGroup):
 
     ##############################################
 
@@ -57,8 +57,10 @@ class Devices(CommandGroup):
         from AdminToolkit.interface.disk.device import BlockDevice
         device = BlockDevice(dev_path)
         self.print(f'<blue>{device.name}</blue> -> <blue>{device.resolved_dev_path}</blue>')
-        self.print(f'  {device.model}   <blue>{device.hsize}</blue> = {device.number_of_sectors:_} s')
+        self.print(f'  {device.model}   <blue>{device.hsize}</blue> = {device.number_of_sectors:_} sectors of {device.sector_size}-byte')
         self.print(f'  Partition Table: <green>{device.partition_table_type}</green>')
+        if device.is_gpt:
+            self.print('    first and last sectors are used for GPT')
         # pprint(device._lsblk)
         # pprint(device._gpt)
         last_end = 0
@@ -68,27 +70,33 @@ class Devices(CommandGroup):
             self.print(f'<red>{d.name:5}</red> | {d.start:14_} — {d.end:14_} = {d.size:16_} = <blue>{d.hsize:>8}</blue> | {d.fs:4} | {d.mountpoint:16} | {d.label}')
         def print_gap(start):
             if start != last_end + 1:
-                gap_size = device.sector_to_byte(start - last_end)
+                number_of_sectors = start - last_end
+                gap_size = device.sector_to_byte(number_of_sectors)
                 hgap_size = byte_humanize(gap_size)
                 print_line(
                     name='...',
                     start=last_end + 1 if last_end else 0,
                     end=start - 1,
-                    size=gap_size,
+                    size=number_of_sectors,
                     hsize=hgap_size,
                     label='',
                     fs='',
                     mountpoint='',
                 )
         for p in sorted(device.partitions, key=lambda p: p.gpt_start):
+            if p.is_ebr:
+                # handle EBR as a GPT gap
+                continue
             # pprint(p._lsblk)
             # pprint(p._gpt)
             print_gap(p.gpt_start)
+            # indent = ' '*4
+            # self.print(f"{indent}<green>{p.gpt_type_uuid_str}</green>   UUID {p.gpt_uuid}")
             print_line(
                 name=p.name,
                 start=p.gpt_start,
                 end=p.gpt_end,
-                size=p.gpt_size,
+                size=p.gpt_number_of_sectors,
                 hsize=p.gpt_hsize,
                 # label=p.label,
                 label=p.part_label,
@@ -193,28 +201,29 @@ class Devices(CommandGroup):
             for lv in vg.lvs:
                 self.print('  ' + '-'*10)
                 self.print(f"  <red>LV</red> <blue>{lv.name}</blue>")
-                layout = ' '.join(lv.layout)
+                # layout = ' '.join(lv.layout)
                 self.print(f"    {lv.hsize}   on {lv.number_of_segments} segments")
-                self.print(f"    layout: {layout}")
+                self.print(f"    layout: {lv.layout}")
 
         for pv in lvm.pvs:
             self.print()
             self.print(RULE)
             self.print(f"<red>PV</red> <blue>{pv.name}</blue> — <blue>{pv.vg_name}</blue>")
             self.print(f"  {pv.hsize} / {pv.hfree}")
-            self.print(f"  {pv.number_of_extents:_} / {pv.number_of_free_extents:_} extents")
+            self.print(f"  {pv.number_of_extents:_} / {pv.number_of_free_extents:_} extents of {pv.extent_hsize}")
             start = 0
 
             def print_segment(start: int, end: int, name: str = None) -> None:
                 size = end - start + 1
+                hsize = byte_humanize(size * pv.extent_size)
                 if name is None:
                     name = "free segments"
-                self.print(f"  {start:9_} - {end:9_} / {size:9_} : <blue>{name}</blue>")
+                self.print(f"  {start:9_} - {end:9_} / {size:9_} / {hsize:>7} : <blue>{name}</blue>")
 
             for sg in pv.segments:
                 if sg.start != start:
                     end = sg.start - 1
-                    self.print_segment(start, end)
+                    print_segment(start, end)
                 print_segment(sg.start, sg.end, sg.name)
                 start = sg.end + 1
             if start != pv.number_of_extents:

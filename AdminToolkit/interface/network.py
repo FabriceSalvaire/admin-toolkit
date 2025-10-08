@@ -54,7 +54,9 @@ AddressInfo = namedtuple_factory(
         'protocol',
         'scope',
         'stable_privacy',
+        'temporary',
         'valid_life_time',
+        'mngtmpaddr',
     ),
 )
 

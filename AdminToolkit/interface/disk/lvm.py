@@ -74,10 +74,12 @@ class PV(LvmBase):
 
     @property
     def size(self) -> int:
+        """Size in byte"""
         return self._data.pv_size
 
     @property
     def free(self) -> int:
+        """Free space in byte"""
         return self._data.pv_free
 
     @property
@@ -87,6 +89,18 @@ class PV(LvmBase):
     @property
     def hfree(self) -> int:
         return byte_humanize(self.free)
+
+    @property
+    def extent_size(self) -> int:
+        """Size of an extent in byte"""
+        # Fixme: not in json cf. Vg.extent_size
+        _ = self.size // self.number_of_extents
+        assert(_ * self.number_of_extents == self.size)
+        return _
+
+    @property
+    def extent_hsize(self) -> str:
+        return byte_humanize(self.extent_size)
 
 ####################################################################################################
 
@@ -151,6 +165,7 @@ class VG(LvmBase):
 
     @property
     def extent_size(self) -> int:
+        """Size of an extent in byte"""
         return self._data.vg_extent_size
 
     @property
@@ -167,6 +182,7 @@ class VG(LvmBase):
 
     @property
     def size(self) -> int:
+        """Size in  byte"""
         return self._data.vg_size
 
     @property
@@ -257,7 +273,7 @@ class LVM:
 
     @classmethod
     def call_xvs(cls, name: str, segments: bool = False) -> list:
-        XVS = cp.cmd(f'{name}s')
+        XVS = cp.scmd(f'{name}s')
         raise_if_not_root(f'lvm {XVS} command')
         if name == 'pv' and segments:
             options = '--options=pvseg_all,pv_name,vg_name,lv_name'
@@ -270,7 +286,8 @@ class LVM:
             '--units=b',
             '--nosuffix',
             options,
-            '--reportformat=json_std',
+            # '--reportformat=json_std',
+            '--reportformat=json',   # Debian 12
         )
         _ = run_command(cmd, to_json=True)
         data = _['report'][0][name]
@@ -336,15 +353,16 @@ if __name__ == '__main__':
         print()
         print('-'*50)
         print(f"PV {pv.name} / {pv.vg_name}")
-        print(f"{pv.number_of_extents:9_} / {pv.number_of_free_extents:_} extents")
+        print(f"{pv.number_of_extents:9_} / {pv.number_of_free_extents:_} extents of {pv.extent_hsize}")
         print(f"{pv.hsize} / {pv.hfree}")
         start = 0
 
         def print_segment(start: int, end: int, name: str = None) -> None:
             size = end - start + 1
+            hsize = byte_humanize(size * pv.extent_size)
             if name is None:
                 name = "free segments"
-            print(f"{start:9_} — {end:9_} / {size:9_} : {name}")
+            print(f"{start:9_} — {end:9_} / {size:9_} / {hsize:6} : {name}")
 
         for sg in pv.segments:
             if sg.start != start:

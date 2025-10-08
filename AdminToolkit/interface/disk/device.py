@@ -141,7 +141,7 @@ class DeviceType(IntEnum):
     SCSI_DEVICE = auto()
     SCSI_PARTITION = auto()
     LVM_LOGIC_VOLUME = auto()
-    DMRAID_VOLUME = auto()
+    MDRAID_VOLUME = auto()
 
 ####################################################################################################
 
@@ -181,7 +181,7 @@ class DeviceAbc:
             if dev_path.name.startswith('dm-'):
                 return DeviceType.LVM_LOGIC_VOLUME
             else:
-                return DeviceType.DMRAID_VOLUME
+                return DeviceType.MDRAID_VOLUME
         elif _.startswith('/dev/mapper/'):
             if cls.split_lvm(dev_path) is not None:
                 return DeviceType.LVM_LOGIC_VOLUME
@@ -267,6 +267,7 @@ class BlockDevice(DeviceAbc):
         try:
             self._gpt = parted(self.dev_path)
             self.is_gpt = self._gpt.label == 'gpt'
+            # Fixme: It creates a partition for MBR extended
             self._gpt_partitions = {_.number: _ for _ in self._gpt.partitions}
         except RootPermissionRequired:
             self._gpt = None
@@ -383,7 +384,11 @@ class Partition(DeviceAbc):
 
     @property
     def number(self) -> str:
-        return self._lsblk.partn
+        _ = self._lsblk.partn
+        # Debian
+        if _ is None:
+            return self.id
+        return _
 
     @property
     def part_label(self) -> str:
@@ -461,8 +466,20 @@ class Partition(DeviceAbc):
     ##############################################
 
     @property
+    def is_ebr(self) -> str:
+        return self._gpt.type == 'extended'
+
+    @property
     def gpt_uuid(self) -> str:
         return self._gpt.uuid
+
+    @property
+    def gpt_type_uuid(self) -> str:
+        return self._gpt.type_uuid
+
+    @property
+    def gpt_type_uuid_str(self) -> str:
+        return self._gpt.type_uuid_str
 
     @property
     def gpt_start(self) -> int:
@@ -471,6 +488,10 @@ class Partition(DeviceAbc):
     @property
     def gpt_end(self) -> int:
         return self._gpt.end
+
+    @property
+    def gpt_number_of_sectors(self) -> int:
+        return self.gpt_end - self.gpt_start + 1
 
     @property
     def gpt_size(self) -> int:

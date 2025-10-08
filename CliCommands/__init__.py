@@ -13,6 +13,6 @@
 ####################################################################################################
 
 from .backup import Backup
-from .devices import Devices
+from .device import Device
 from .filesystem import Filesystem
 from .system import SystemCommands
