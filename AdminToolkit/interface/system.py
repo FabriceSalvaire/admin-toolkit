@@ -55,6 +55,10 @@ class System:
             # Fedora release 42 (Adams)
             self.os_product = data.split()[0]
             self.os_version = data
+        elif cp.DEBIAN_VERSION.exists():
+            self.os_vendor = 'Debian'
+            self.os_product = 'Debian'
+            self.os_version = cp.DEBIAN_VERSION.read_text().strip()
 
 ####################################################################################################
 
