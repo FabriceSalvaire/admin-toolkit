@@ -23,9 +23,9 @@ from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.disk.partition import parted
 from AdminToolkit.interface.disk.tool import to_dev_path, is_sd
 from AdminToolkit.interface.user import RootPermissionRequired
-from AdminToolkit.tools.format import byte_humanize, fix_none
-from AdminToolkit.tools.object import namedtuple_factory
-from AdminToolkit.tools.subprocess import run_command
+from AdminToolkit.common.format import byte_humanize, fix_none
+from AdminToolkit.common.object import namedtuple_factory
+from AdminToolkit.common.subprocess import run_command
 
 type PathStr = Path | str
 

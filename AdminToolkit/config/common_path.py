@@ -10,7 +10,7 @@
 
 from pathlib import Path
 
-from AdminToolkit.tools.mockup import MockupPath
+from AdminToolkit.common.mockup import MockupPath
 
 ####################################################################################################
 

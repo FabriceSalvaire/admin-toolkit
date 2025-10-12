@@ -11,7 +11,7 @@
 from pathlib import Path
 import subprocess
 
-from AdminToolkit.tools.printer import atprint
+from AdminToolkit.common.printer import atprint
 
 ####################################################################################################
 

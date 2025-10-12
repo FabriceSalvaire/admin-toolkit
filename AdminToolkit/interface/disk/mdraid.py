@@ -10,7 +10,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from AdminToolkit.config import common_path as cp
-from AdminToolkit.tools.subprocess import iter_on_command_output
+from AdminToolkit.common.subprocess import iter_on_command_output
 
 ####################################################################################################
 

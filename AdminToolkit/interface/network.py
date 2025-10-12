@@ -14,8 +14,8 @@ __all__ = []
 from typing import Iterator
 
 from AdminToolkit.config import common_path as cp
-from AdminToolkit.tools.object import namedtuple_factory
-from AdminToolkit.tools.subprocess import run_command
+from AdminToolkit.common.object import namedtuple_factory
+from AdminToolkit.common.subprocess import run_command
 
 ####################################################################################################
 

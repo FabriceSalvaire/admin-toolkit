@@ -30,11 +30,11 @@ import struct
 import uuid
 
 from AdminToolkit.config import common_path as cp
-from AdminToolkit.tools.danger import raise_if_root_device   # , CONFIRM_DANGER
+from AdminToolkit.common.danger import raise_if_root_device   # , CONFIRM_DANGER
 from AdminToolkit.interface.disk.tool import to_dev_path
 from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.tools.object import fix_dict_key
-from AdminToolkit.tools.subprocess import run_command, RUN_DANGEROUS
+from AdminToolkit.common.object import fix_dict_key
+from AdminToolkit.common.subprocess import run_command, RUN_DANGEROUS
 
 type PathStr = Path | str
 
@@ -285,7 +285,7 @@ def read_partitions(stream: bytes, header, lba_size: int = 512):
 
 
 if __name__ == '__main__':
-    from AdminToolkit.tools.format import byte_humanize
+    from AdminToolkit.common.format import byte_humanize
 
     dev_name = 'sda'
     # dev_name = 'sdc'

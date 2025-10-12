@@ -19,7 +19,7 @@ from pathlib import Path
 from AdminToolkit.config import config
 from AdminToolkit.cli import CommandGroup
 from AdminToolkit.interface.disk.mount import mount, is_mounted, umount
-from AdminToolkit.tools.object import objectify
+from AdminToolkit.common.object import objectify
 
 ####################################################################################################
 

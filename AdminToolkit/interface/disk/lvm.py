@@ -18,9 +18,9 @@ from typing import Iterator
 
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.tools.format import byte_humanize
-from AdminToolkit.tools.object import to_namedtuple
-from AdminToolkit.tools.subprocess import run_command
+from AdminToolkit.common.format import byte_humanize
+from AdminToolkit.common.object import to_namedtuple
+from AdminToolkit.common.subprocess import run_command
 
 ####################################################################################################
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from pprint import pprint
 
 from AdminToolkit.cli import CommandGroup, DevPath
-from AdminToolkit.tools.format import byte_humanize, fix_none, Table
+from AdminToolkit.common.format import byte_humanize, fix_none, Table
 
 ####################################################################################################
 
@@ -38,7 +38,7 @@ class Device(CommandGroup):
     ##############################################
 
     def is_root(self, name: str) -> None:
-        from AdminToolkit.tools.danger import raise_if_root_device, IsRootAbortAction
+        from AdminToolkit.common.danger import raise_if_root_device, IsRootAbortAction
         try:
             raise_if_root_device(name)
             self.print('is <green>safe</green> device')
