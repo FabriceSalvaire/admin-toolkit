@@ -6,6 +6,8 @@
 #
 ####################################################################################################
 
+__all__ =  ['df']
+
 ####################################################################################################
 
 from dataclasses import dataclass
@@ -20,12 +22,18 @@ from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
 
-EXCLUDED_MOUNTPOINTS = ('dev', 'sys', 'tmp')
+EXCLUDED_FS_TYPES = (
+    'devtmpfs',
+    'efivarfs',
+    'tmpfs',
+)
 
 ####################################################################################################
 
 @dataclass
 class DfInfo:
+
+    """Class to store the output of `df` for a filesystem"""
 
     # df sorted
     dev: str
@@ -67,11 +75,12 @@ class DfInfo:
 
 ####################################################################################################
 
-def df() -> list:
+def df() -> list[DfInfo]:
+    """Run `df` and return a list of `DfInfo` instances"""
     df_infos = []
-    cmd = (
-        cp.DF,
-    )
+    cmd = [cp.DF]
+    for _ in EXCLUDED_FS_TYPES:
+        cmd.append(f'--exclude-type={_}')
     for line in iter_on_command_output(cmd, skip_first_lines=1):
         _ = split_line(
             line,
@@ -84,12 +93,12 @@ def df() -> list:
         df_info = DfInfo(*_)
         # print(df_info)
         parts = df_info.mountpoint.parts
-        if (df_info.mountpoint == cp.ROOT
-            or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
-            if len(parts) >= 2 and parts[1] == 'run':
-                if not (len(parts) >= 3 and parts[2] == 'media'):
-                    continue
-            df_infos.append(df_info)
+        # if (df_info.mountpoint == cp.ROOT
+        #     or (len(parts) > 1 and parts[1] not in EXCLUDED_MOUNTPOINTS)):
+        #     if len(parts) >= 2 and parts[1] == 'run':
+        #         if not (len(parts) >= 3 and parts[2] == 'media'):
+        #             continue
+        df_infos.append(df_info)
     return df_infos
 
 ####################################################################################################
