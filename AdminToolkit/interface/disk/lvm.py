@@ -18,9 +18,9 @@ from typing import Iterator
 
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
+from AdminToolkit.tools.format import byte_humanize
 from AdminToolkit.tools.object import to_namedtuple
 from AdminToolkit.tools.subprocess import run_command
-from AdminToolkit.tools.format import byte_humanize
 
 ####################################################################################################
 
@@ -35,7 +35,7 @@ class LvmBase:
     ##############################################
 
     def add_segment(self, sg: 'PvSegment') -> None:
-        self._sg.append(sg) 
+        self._sg.append(sg)
 
     @property
     def segments(self) -> Iterator['PvSegment']:
@@ -44,6 +44,8 @@ class LvmBase:
 ####################################################################################################
 
 class PV(LvmBase):
+
+    """Class to store the properties of a physical volume"""
 
     ##############################################
 
@@ -106,6 +108,8 @@ class PV(LvmBase):
 
 class PvSegment:
 
+    """Class to store the properties of a physical volume segment"""
+
     ##############################################
 
     def __init__(self, data: 'PvSegInfo') -> None:
@@ -149,6 +153,8 @@ class PvSegment:
 ####################################################################################################
 
 class VG(LvmBase):
+
+    """Class to store the properties of a volume group"""
 
     ##############################################
 
@@ -218,6 +224,8 @@ class VG(LvmBase):
 
 class LV(LvmBase):
 
+    """Class to store the properties of a logic volume"""
+
     ##############################################
 
     def __init__(self, data: 'LvInfo') -> None:
@@ -268,6 +276,8 @@ class LV(LvmBase):
 ####################################################################################################
 
 class LVM:
+
+    """Class to handle LVM"""
 
     ##############################################
 

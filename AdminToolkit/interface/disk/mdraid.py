@@ -17,6 +17,8 @@ from AdminToolkit.tools.subprocess import iter_on_command_output
 
 @dataclass
 class MdRaidDevice:
+    """Class to store the properties of a MDRaid device"""
+
     number_name: str
     status: str
     raid_type: str
@@ -35,6 +37,8 @@ class MdRaidDevice:
 
 class MdRaidDevices:
 
+    """Class to query MDRaid devices"""
+
     ##############################################
 
     def __init__(self):
@@ -50,11 +54,13 @@ class MdRaidDevices:
 
     @property
     def raid_types(self) -> [str]:
+        """Return the types of RAID supported by the kernel"""
         return tuple(self._raid_types)
 
     ##############################################
 
     def proc_mdstat(self) -> list[MdRaidDevice]:
+        """Read information from `/proc/mdstat` and return a list of `MdRaidDevice` instances"""
         content = MOCKUP_CACHE.read_text(cp.PROC_MDSTAT)
         mdraid_devices = []
         for line in content.splitlines():
@@ -96,6 +102,7 @@ class MdRaidDevices:
     ##############################################
 
     def mdadm_detail(self, md_device: MdRaidDevice) -> None:
+        """Call `mdadm` to get additional information"""
         cmd = (
             cp.MDADM,
             '--detail',

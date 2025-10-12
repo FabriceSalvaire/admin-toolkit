@@ -16,14 +16,18 @@ from pprint import pprint
 
 from AdminToolkit.config import common_path as cp
 from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.printer import atprint
 from AdminToolkit.tools.object import split_line
 from AdminToolkit.tools.subprocess import run_command, iter_on_command_output
 
+type PathStr = Path | str
+
 ####################################################################################################
 
-def get_mount_points() -> list:
-    MountInfo = namedtuple('MountInfo', ('dev', 'mountpoint', 'type', 'options'))
+#: Class to store the output of mount for a mountpoint
+MountInfo = namedtuple('MountInfo', ('dev', 'mountpoint', 'type', 'options'))
+
+def get_mount_points() -> list[MountInfo]:
+    """Run `mount` and return a list of `MountInfo` instances"""
     cmd = (
         cp.MOUNT,
     )
@@ -45,11 +49,12 @@ def get_mount_points() -> list:
 ####################################################################################################
 
 def mount(
-    device_path: Path | str,
-    mountpoint: Path | str,
+    device_path: PathStr,
+    mountpoint: PathStr,
     make: bool = False,
     ro: bool = False,
 ) -> list:
+    """Mount a device"""
     device_path = Path(device_path)
     mountpoint = Path(mountpoint)
     if not device_path.exists():
@@ -72,7 +77,8 @@ def mount(
 
 ####################################################################################################
 
-def is_mounted(device_path: Path | str, mountpoint: Path | str,) -> bool:
+def is_mounted(device_path: PathStr, mountpoint: PathStr,) -> bool:
+    """Return `True` is a device is mounted"""
     sd_path = Path(device_path).resolve()
     mountpoint = Path(mountpoint)
     for mount_info in proc_mount():
@@ -83,9 +89,10 @@ def is_mounted(device_path: Path | str, mountpoint: Path | str,) -> bool:
 ####################################################################################################
 
 def umount(
-    device_path: Path | str = None,
-    mountpoint: Path | str = None,
+    device_path: PathStr = None,
+    mountpoint: PathStr = None,
 ):
+    """Umount a device"""
     if device_path is None and mountpoint is None:
         raise ValueError("require a device_path or mountpoint")
     if device_path is not None:
@@ -102,8 +109,11 @@ def umount(
 
 ####################################################################################################
 
-def proc_mount() -> list:
-    ProcMountInfo = namedtuple('ProcMountInfo', ('dev', 'mountpoint', 'type', 'options', 'fs_freq', 'fs_passno'))
+#: Class to store the output of `/proc/mount` for a mountpoint
+ProcMountInfo = namedtuple('ProcMountInfo', ('dev', 'mountpoint', 'type', 'options', 'fs_freq', 'fs_passno'))
+
+def proc_mount() -> list[ProcMountInfo]:
+    """Read `/proc/mount` and return a list of `ProcMountInfo` instances"""
     _ = cp.PROC_MOUNT.read_text()
     mount_points = []
     for line in _.splitlines():
@@ -121,7 +131,10 @@ def proc_mount() -> list:
 
 ####################################################################################################
 
-def get_root_device() -> str:
+def get_root_device() -> str | list[str]:
+    """Return the path of the device mounted on root `/`
+    It will return a list of devices if the root partition is stored on a RAID device.
+    """
     from AdminToolkit.interface.disk.partition import partion_to_device
     ### SECURITY FUNCTION ! ###
     for mount_info in proc_mount():

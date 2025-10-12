@@ -10,6 +10,18 @@ __all__ = ['partion_to_device', 'parted']
 
 ####################################################################################################
 
+# See also
+#  Linux kernel Tools
+#    addpart   - tell the kernel about the existence of a partition
+#    delpart   - tell the kernel to forget about a partition
+#    partprobe - inform the OS of partition table changes
+#    partx     - tell the kernel about the presence and numbering of on-disk partitions
+#
+#    fdisk     - manipulate disk partition table
+#  Parted is a GNU tool
+
+####################################################################################################
+
 from collections import namedtuple
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +35,8 @@ from AdminToolkit.interface.disk.tool import to_dev_path
 from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import fix_dict_key
 from AdminToolkit.tools.subprocess import run_command, RUN_DANGEROUS
+
+type PathStr = Path | str
 
 ####################################################################################################
 
@@ -42,6 +56,7 @@ def partion_to_device(name: str) -> str:
 ####################################################################################################
 
 def fix_s_unit(d: dict) -> None:
+    """Remove `s` unit prefix in a dict"""
     for key in ('start', 'end', 'size'):
         if key in d:
             _ = int(d[key][:-1])
@@ -52,6 +67,8 @@ def fix_s_unit(d: dict) -> None:
 
 @dataclass
 class GptPartion:
+    """Class to store the properties of a GPT/MsDOS partion"""
+
     end: int = None
     filesystem: str = None
     flags: str = None
@@ -80,6 +97,7 @@ class GptPartion:
 
     @property
     def type_uuid_str(self) -> str:
+        """Return the type accoring to the type UUID"""
         if self.type_uuid is not None:
             return self.TYPE_UUID.get(self.type_uuid.lower(), '???')
         else:
@@ -89,6 +107,8 @@ class GptPartion:
 
 @dataclass
 class GptTable:
+    """Class to store the properties of a GPT/MsDOS partion table"""
+
     label: str = None
     logical_sector_size: int = None
     max_partitions: str = None
@@ -102,7 +122,8 @@ class GptTable:
 
 ####################################################################################################
 
-def parted(dev_path: str | Path) -> dict:
+def parted(dev_path: PathStr) -> GptTable:
+    """Run `parted` and return a `GptTable` instance"""
     raise_if_not_root(cp.PARTED)
     dev_path = to_dev_path(dev_path)
     cmd = (
@@ -119,6 +140,7 @@ def parted(dev_path: str | Path) -> dict:
     for part in data['partitions']:
         fix_dict_key(part)
         fix_s_unit(part)
+        # ensure theses keys are set to an empty string
         for key in ('filesystem', 'name'):
             if key not in part or part[key] is None:
                 part[key] = ''
@@ -127,8 +149,7 @@ def parted(dev_path: str | Path) -> dict:
         new_partitions.append(part)
     data['partitions'] = new_partitions
     fix_s_unit(data)
-    data = GptTable(**fix_dict_key(data))
-    return data
+    return GptTable(**fix_dict_key(data))
 
 ####################################################################################################
 
@@ -178,7 +199,8 @@ def _to_uuid(value: bytes) -> str:
 
 ####################################################################################################
 
-def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
+def read_device(dev_path: PathStr, count: int = 1024) -> bytes:
+    """Read the `count` first sectors of a block device"""
     raise_if_not_root(cp.DD)
     dev_path = to_dev_path(dev_path)
     cmd = (
@@ -190,7 +212,8 @@ def read_device(dev_path: str | Path, count: int = 1024) -> bytes:
 
 ####################################################################################################
 
-def clear_device(dev_path: str | Path, count: int = 1) -> bytes:
+def clear_device(dev_path: PathStr, count: int = 1) -> bytes:
+    """Clear the `count` first sectors of a block device"""
     # !!! DANGER !!!
     raise_if_not_root(cp.DD)
     dev_path = to_dev_path(dev_path)

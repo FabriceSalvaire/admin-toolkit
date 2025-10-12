@@ -14,11 +14,6 @@ __all__ = ['BlockDevice']
 
 ####################################################################################################
 
-# lsblk
-# hdparm -i /dev/sda
-
-####################################################################################################
-
 from enum import IntEnum, auto
 from pathlib import Path
 # from pprint import pprint
@@ -32,8 +27,11 @@ from AdminToolkit.tools.format import byte_humanize, fix_none
 from AdminToolkit.tools.object import namedtuple_factory
 from AdminToolkit.tools.subprocess import run_command
 
+type PathStr = Path | str
+
 ####################################################################################################
 
+#: Class to store lsblk data
 LsblkData = namedtuple_factory(
     'LsblkData',
     (
@@ -113,7 +111,8 @@ LsblkData = namedtuple_factory(
 
 ####################################################################################################
 
-def lsblk(dev_path: str | Path) -> dict:
+def lsblk(dev_path: PathStr) -> LsblkData:
+    """Call `lsblk` command for device path and return a `LsblkData` instance"""
     # lsblk command reads the sysfs filesystem and udev db to gather
     # information. If the udev db is not available or lsblk is
     # compiled without udev support, then it tries to read LABELs,
@@ -138,6 +137,7 @@ def lsblk(dev_path: str | Path) -> dict:
 ####################################################################################################
 
 class DeviceType(IntEnum):
+    """Enum to define the type of device"""
     SCSI_DEVICE = auto()
     SCSI_PARTITION = auto()
     LVM_LOGIC_VOLUME = auto()
@@ -147,10 +147,13 @@ class DeviceType(IntEnum):
 
 class DeviceAbc:
 
+    """Base class for device"""
+
     ##############################################
 
     @classmethod
-    def split_lvm(cls, dev_path: Path | str) -> [str, str]:
+    def split_lvm(cls, dev_path: PathStr) -> [str, str]:
+        """Split a LVM device path `/dev/mapper/vg_name--lv_name` to a ``(vg_name, lv_name) tuple"""
         _ = str(dev_path)
         if _.startswith('/dev/mapper/'):
             name = dev_path.name
@@ -167,7 +170,8 @@ class DeviceAbc:
     ##############################################
 
     @classmethod
-    def dev_path_type(cls, dev_path: Path | str) -> DeviceType:
+    def dev_path_type(cls, dev_path: PathStr) -> DeviceType:
+        """Return the type of device as a `DeviceType` enum from a device path"""
         dev_path = Path(dev_path)
         if not dev_path.exists():
             raise ValueError(f"Device path {dev_path} doesn't exists")
@@ -191,15 +195,17 @@ class DeviceAbc:
                 return DeviceType.LVM_LOGIC_VOLUME
         return None
 
-   ##############################################
+    ##############################################
 
     @property
     def links(self) -> Iterator[str]:
+        """Iterate over device links"""
         return iter(self._links)
 
-   ##############################################
+    ##############################################
 
     def filtered_links(self, by: str = '', name: str = '') -> Iterator[str]:
+        """Iterate over device links matching `by` or `name`"""
         for _ in self._links:
             if by and f'by-{by}' != _.parts[3]:
                 continue
@@ -211,11 +217,19 @@ class DeviceAbc:
 
 class BlockDevice(DeviceAbc):
 
+    """Class for a block device"""
+
     ##############################################
 
     @classmethod
     def devices(cls) -> Iterator['BlockDevice']:
-        """Return an iterator on BlockDevice"""
+        """Return an iterator on relevant `BlockDevice` found in `/sys/block`"""
+        # /sys/block lists these block devices:
+        #   sd<number> SCSI devices
+        #   dm-<number> virtual device
+        #   loop0
+        #   zram0
+        # there are symlinks to ../devices/...
         for _ in cp.SYS_BLOCK.iterdir():
             if is_sd(_.name):
                 device = BlockDevice(_.name)
@@ -240,7 +254,7 @@ class BlockDevice(DeviceAbc):
 
     ##############################################
 
-    def __init__(self, dev_path: str | Path) -> None:
+    def __init__(self, dev_path: PathStr) -> None:
         self._dev_path = to_dev_path(dev_path)
         # Fixme: can return None
         self._lsblk = lsblk(self.dev_path)
@@ -264,6 +278,7 @@ class BlockDevice(DeviceAbc):
     ##############################################
 
     def _read_gpt_table(self):
+        """Read partition table using `Parted`"""
         try:
             self._gpt = parted(self.dev_path)
             self.is_gpt = self._gpt.label == 'gpt'
@@ -340,11 +355,14 @@ class BlockDevice(DeviceAbc):
 
     @property
     def partitions(self) -> Iterator['Partition']:
+        """Iterate over partitions"""
         return iter(self._partitions)
 
 ####################################################################################################
 
 class Partition(DeviceAbc):
+
+    """Class for a partition"""
 
     ##############################################
 
@@ -505,8 +523,8 @@ class Partition(DeviceAbc):
     def gpt_flags(self) -> [str]:
         return self._gpt.flags
 
-
 ####################################################################################################
+
 
 if __name__ == '__main__':
     devices = BlockDevice.devices()
