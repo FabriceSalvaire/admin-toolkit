@@ -13,8 +13,8 @@ from pathlib import Path
 DEBUG = False
 MOCKUP = False
 
-DEBUG = True
-MOCKUP = True
+# DEBUG = True
+# MOCKUP = True
 
 ####################################################################################################
 
