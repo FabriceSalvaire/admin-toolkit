@@ -10,12 +10,23 @@
 
 from pathlib import Path
 
+from AdminToolkit.tools.mockup import MOCKUP_CACHE
+
+####################################################################################################
+
+class MockupPath(Path):
+
+    ##############################################
+
+    def read_text(self) -> str:
+        return MOCKUP_CACHE.read_text(self)
+
 ####################################################################################################
 
 ROOT = Path('/')
 DEV = Path('/dev')
 ETC = Path('/etc')
-PROC = Path('/proc')
+PROC = MockupPath('/proc')
 SYS = Path('/sys')
 RUN = Path('/run')
 USR_BIN = Path('/usr/bin')
@@ -50,6 +61,7 @@ def proc(name: str) -> Path:
 
 ####################################################################################################
 
+PROC_CPUINFO = proc('cpuinfo')
 PROC_MOUNT = proc('self/mounts')
 PROC_MDSTAT = proc('mdstat')
 
@@ -59,6 +71,7 @@ DEV_DISK = DEV.joinpath('disk')
 ####################################################################################################
 
 DD = cmd('dd')
+DUMPE2FS = scmd('dumpe2fs')
 DF = cmd('df')
 DU = cmd('du')
 IP = scmd('ip')
