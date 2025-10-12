@@ -7,10 +7,11 @@
 ####################################################################################################
 
 __all__ = [
-    'MOCKUP_CACHE',
-    'MockupCacheEntry',
     'CmdMockupCacheEntry',
     'FileMockupCacheEntry',
+    'MOCKUP_CACHE',
+    'MockupCacheEntry',
+    'MockupPath',
 ]
 
 ####################################################################################################
@@ -18,7 +19,7 @@ __all__ = [
 from dataclasses import dataclass
 from pathlib import Path
 
-from AdminToolkit.config.config import MOCKUP
+from AdminToolkit.config import config
 from AdminToolkit.printer import atprint
 
 ####################################################################################################
@@ -98,7 +99,7 @@ class MockupCache:
     ##############################################
 
     def get(self, key) -> MockupCacheEntry:
-        if MOCKUP:
+        if config.MOCKUP:
             import AdminToolkit.config.mockup_config
             atprint(f"<blue>Lookup mockup for</blue> {key}")
             uuid = self.to_uuid(key)
@@ -120,6 +121,21 @@ class MockupCache:
     ##############################################
 
     # for run_command see subprocess.py
+
+####################################################################################################
+
+class MockupPath(Path):
+
+    ##############################################
+
+    def read_text(self) -> str:
+        content = MOCKUP_CACHE.read_text(self)
+        if config.DEBUG:
+            RULE = '<blue>' + '-'*50 + '</blue>'
+            atprint(RULE)
+            print(content)
+            atprint(RULE)
+        return content
 
 ####################################################################################################
 

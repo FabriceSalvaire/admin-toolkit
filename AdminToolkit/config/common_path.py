@@ -10,25 +10,16 @@
 
 from pathlib import Path
 
-from AdminToolkit.tools.mockup import MOCKUP_CACHE
-
-####################################################################################################
-
-class MockupPath(Path):
-
-    ##############################################
-
-    def read_text(self) -> str:
-        return MOCKUP_CACHE.read_text(self)
+from AdminToolkit.tools.mockup import MockupPath
 
 ####################################################################################################
 
 ROOT = Path('/')
-DEV = Path('/dev')
-ETC = Path('/etc')
+DEV = MockupPath('/dev')
+ETC = MockupPath('/etc')
 PROC = MockupPath('/proc')
-SYS = Path('/sys')
-RUN = Path('/run')
+RUN = MockupPath('/run')
+SYS = MockupPath('/sys')
 USR_BIN = Path('/usr/bin')
 USR_SBIN = Path('/usr/sbin')
 

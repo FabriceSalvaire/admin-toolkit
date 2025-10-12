@@ -12,9 +12,8 @@ __all__ = ['RUN_DANGEROUS', 'run_command', 'iter_on_command_output']
 
 import json
 import subprocess
-import sys
 
-from AdminToolkit.config.config import DEBUG
+from AdminToolkit.config import config
 from AdminToolkit.printer import atprint
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
 from AdminToolkit.tools.object import load_json
@@ -37,7 +36,7 @@ def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
     except AbortAction:
         raise
     except Exception as e:
-         raise e
+        raise e
 
 ####################################################################################################
 
@@ -50,7 +49,7 @@ def run_command(
     check: bool = True,
     rc: bool = False,
 ) -> str:
-    if DEBUG:
+    if config.DEBUG:
         atprint(f'<red>run_command:</red> {cmd}')
     _ = MOCKUP_CACHE.get(cmd)
     if _ is not None:
@@ -60,14 +59,14 @@ def run_command(
         process = subprocess.run(cmd, capture_output=True, check=check)
         stdout = process.stdout
         stderr = process.stderr
-    if print_output or DEBUG:
+    if print_output or config.DEBUG:
         def _print(_):
             if isinstance(_, bytes):
                 try:
                     _ = _.decode('utf8')
-                    atprint(_)
                 except UnicodeDecodeError:
                     pass
+            atprint(_)
         LRULE = '<blue>-- '
         RRULE = '-'*30 + '</blue>'
         atprint(f'{LRULE} stderr {RRULE}')

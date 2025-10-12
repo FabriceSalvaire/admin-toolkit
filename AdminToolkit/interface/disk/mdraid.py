@@ -10,7 +10,6 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from AdminToolkit.config import common_path as cp
-from AdminToolkit.tools.mockup import MOCKUP_CACHE
 from AdminToolkit.tools.subprocess import iter_on_command_output
 
 ####################################################################################################
@@ -61,7 +60,7 @@ class MdRaidDevices:
 
     def proc_mdstat(self) -> list[MdRaidDevice]:
         """Read information from `/proc/mdstat` and return a list of `MdRaidDevice` instances"""
-        content = MOCKUP_CACHE.read_text(cp.PROC_MDSTAT)
+        content = cp.PROC_MDSTAT.read_text()
         mdraid_devices = []
         for line in content.splitlines():
             # print(line)
@@ -116,3 +115,13 @@ class MdRaidDevices:
                     md_device.uuid = value
                 case 'MD_DEVNAME':
                     md_device.name = value
+
+
+####################################################################################################
+
+if __name__ == '__main__':
+    from AdminToolkit.config import config
+    config.MOCKUP = True
+    config.DEBUG = True
+    for _ in MdRaidDevices():
+        print(_)
