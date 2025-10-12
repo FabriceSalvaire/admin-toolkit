@@ -38,7 +38,7 @@ class Device(CommandGroup):
     ##############################################
 
     def is_root(self, name: str) -> None:
-        from AdminToolkit.danger import raise_if_root_device, IsRootAbortAction
+        from AdminToolkit.tools.danger import raise_if_root_device, IsRootAbortAction
         try:
             raise_if_root_device(name)
             self.print('is <green>safe</green> device')

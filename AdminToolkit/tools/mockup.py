@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from AdminToolkit.config import config
-from AdminToolkit.printer import atprint
+from AdminToolkit.tools.printer import atprint
 
 ####################################################################################################
 

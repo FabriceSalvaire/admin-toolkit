@@ -12,7 +12,7 @@ __all__ = ['to_dev_path', 'is_sd']
 
 from pathlib import Path
 
-# from AdminToolkit.printer import atprint
+# from AdminToolkit.tools.printer import atprint
 
 type PathStr = Path | str
 

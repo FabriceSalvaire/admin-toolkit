@@ -14,14 +14,14 @@ import json
 import subprocess
 
 from AdminToolkit.config import config
-from AdminToolkit.printer import atprint
+from AdminToolkit.tools.printer import atprint
 from AdminToolkit.tools.mockup import MOCKUP_CACHE
 from AdminToolkit.tools.object import load_json
 
 ####################################################################################################
 
 def RUN_DANGEROUS(message: str, cmd: list[str], **kwargs) -> str:
-    from AdminToolkit.danger import CONFIRM_DANGER, AbortAction
+    from AdminToolkit.tools.danger import CONFIRM_DANGER, AbortAction
     try:
         warning = '/!\\ You will run this dangerous command: /!\\'
         atprint('<red>' + '='*len(warning) + '</red>')

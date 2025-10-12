@@ -18,7 +18,7 @@ import random
 
 from AdminToolkit.interface.disk.mount import get_root_device
 # from AdminToolkit.interface.user import raise_if_not_root
-from AdminToolkit.printer import atprint
+from AdminToolkit.tools.printer import atprint
 
 ####################################################################################################
 

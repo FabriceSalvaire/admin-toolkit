@@ -30,7 +30,7 @@ import struct
 import uuid
 
 from AdminToolkit.config import common_path as cp
-from AdminToolkit.danger import raise_if_root_device   # , CONFIRM_DANGER
+from AdminToolkit.tools.danger import raise_if_root_device   # , CONFIRM_DANGER
 from AdminToolkit.interface.disk.tool import to_dev_path
 from AdminToolkit.interface.user import raise_if_not_root
 from AdminToolkit.tools.object import fix_dict_key
